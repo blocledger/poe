@@ -1,0 +1,24 @@
+{
+  "name": "poe",
+  "description": "Proof of Existence App",
+  "main": "api.js",
+  "authors": [
+    "Eric Vaughn"
+  ],
+  "license": "Apache2",
+  "homepage": "",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "js-sha3": "^0.5.4",
+    "js-sha256": "^0.3.2",
+    "ng-file-upload": "^12.2.11",
+    "angular-bootstrap": "^2.1.4"
+  }
+}

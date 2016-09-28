@@ -1,0 +1,41 @@
+{
+  "peers": [
+    {
+      "discovery_host": "localhost",
+      "discovery_port": 7051,
+      "api_host": "localhost",
+      "api_port_tls": 443,
+      "api_port": 7050,
+      "type": "peer",
+      "id": "localhost",
+      "api_url": "http://localhost:7050"
+    }
+  ],
+  "ca": {
+    "ca": {
+      "url": "localhost:7054",
+      "discovery_host": "localhost",
+      "discovery_port": 7051,
+      "api_host": "localhost",
+      "api_port_tls": 7051,
+      "api_port": 443,
+      "type": "ca",
+      "network_id": "localhost",
+      "container_id": "none"
+    }
+  },
+  "users": [
+    {
+      "username": "admin",
+      "secret": "8b15cc176c",
+      "enrollId": "admin",
+      "enrollSecret": "8b15cc176c"
+    },
+    {
+      "username": "WebAppAdmin",
+      "secret": "DJY27pEnl16d",
+      "enrollId": "WebAppAdmin",
+      "enrollSecret": "DJY27pEnl16d"
+    }
+  ]
+}

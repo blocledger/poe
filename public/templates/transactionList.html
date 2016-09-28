@@ -1,0 +1,41 @@
+<h2 class="sub-header">Transaction List</h2>
+<div class="table-responsive" >
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Transaction ID</th>
+        <th>Time</th>
+        <th>Type</th>
+        <th>Playload </th>
+        <th>Chaincode ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="tx in transactionList track by $index" ng-class="{danger: tx.result.errorCode}" >
+        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{tx.transaction.txid | limitTo:30}}</a></td>
+        <td>{{tx.transaction.timestamp.seconds * 1000 | date:"medium"}}</td>
+        <td>{{tx.transaction.type}}</td>
+        <td>{{tx.transaction.payload.chaincodeSpec.ctorMsg.args}}</td>
+        <td>{{tx.transaction.chaincodeID.name | limitTo:30}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Transaction details</h4>
+      </div>
+      <div class="modal-body">
+        <pre>{{popupTransaction | json}}</pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

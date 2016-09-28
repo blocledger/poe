@@ -1,0 +1,52 @@
+<h1 class="page-header">Proof of Exsitence App</h1>
+
+
+<fieldset>
+<legend>Input Document</legend>
+
+<form class="form-horizontal">
+  <div class="form-group">
+    <label for="fileDrop" class="col-sm-2 control-label">File drop</label>
+    <div class="col-sm-10">
+      <div ngf-drop="hashFile($file)" id="fileDrop" class="drop-box" ngf-drag-over-class="'dragover'">Drop file here</div>
+    </div>
+    <div ngf-no-file-drop>File Drag/Drop is not supported for this browser</div>
+  </div>
+  <div class="form-group">
+    <label for="fileInput" class="col-sm-2 control-label">File input</label>
+    <div class="col-sm-10">
+      <button class="btn btn-default btn-file" ngf-select="hashFile($file)">Select file</button>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for=""></label>
+
+  </div>
+  <div class="form-group">
+    <label for="hashDisplay" class="col-sm-2 control-label">SHA256 hash</label>
+    <div class="col-sm-10">
+      <pre> <span ng-bind="hash"></span> </pre>
+    <!--  <input type="text" class="form-control" id="hashDisplay" ng-model="hash" readonly>  -->
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputName" class="col-sm-2 control-label">Name</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="inputName" ng-model="name" placeholder={{fileName}}>
+    </div>
+  </div>
+  <div class="form-group">
+    <label for="inputOwner" class="col-sm-2 control-label">Owner</label>
+    <div class="col-sm-10">
+      <input type="text" class="form-control" id="inputOwner" placeholder="Owner">
+    </div>
+  </div>
+  <div class="form-group">
+    <div class="col-sm-offset-2 col-sm-10">
+      <button type="submit" class="btn btn-primary btn-lg">Submit</button>
+    </div>
+  </div>
+</form>
+</fieldset>
+
+<transaction-list></transaction-list>

@@ -1,0 +1,41 @@
+<h2 class="sub-header">Block List</h2>
+<div class="table-responsive" style="overflow-y: hidden;">
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Ledger Commit Time</th>
+        <th>Transactions</th>
+        <th>State Hash</th>
+        <th>Previous Block Hash </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="block in blockList">
+        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{block.id}}</a>
+        <td>{{block.block.nonHashData.localLedgerCommitTimestamp.seconds * 1000 + block.block.nonHashData.localLedgerCommitTimestamp.nanos / 1000000 | date:'medium'}}</td>
+        <td>{{block.block.transactions.length}}</td>
+        <td>{{block.block.stateHash | limitTo:30}}</td>
+        <td>{{block.block.previousBlockHash | limitTo:30}}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title" id="myModalLabel">Block details</h4>
+      </div>
+      <div class="modal-body">
+        <pre>{{popupBlock | json}}</pre>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

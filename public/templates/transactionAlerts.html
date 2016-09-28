@@ -1,0 +1,8 @@
+<div class="alert alert-info alert-dismissible" role="alert" ng-show="showAlert" style="overflow-wrap: break-word;">
+  <button type="button" class="close" data-dismiss="alert"></button>
+  <strong>Successfully submitted. Transaction ID: </strong>  {{alertMsg.uuid}}
+</div>
+<div class="alert alert-danger alert-dismissible" role="alert" ng-show="showErrorAlert" style="overflow-wrap: break-word;">
+  <button type="button" class="close" data-dismiss="alert"></button>
+  <strong>Transaction Failed  </strong>  {{alertErrorMsg}}
+</div>

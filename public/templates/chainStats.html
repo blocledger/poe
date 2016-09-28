@@ -1,0 +1,11 @@
+<div class="panel panel-default">
+  <div class="panel-body">
+    <h3>Chain Stats</h3>
+    <div class="row" ng-repeat="(key, value) in chainStats">
+      <div class="col-xs-3">{{key}}</div>
+      <div class="col-xs-9" style="overflow-wrap: break-word;">{{value}}</div>
+    </div>
+  </div>
+</div>
+
+<transaction-alerts></transaction-alerts>
