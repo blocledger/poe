@@ -264,6 +264,65 @@ app.get('/member', function(req, res) {
 // Add support for the Applicaion specific REST calls
 // addDoc, listDoc, transferDoc, verifyDoc, and delDoc
 
+// addDoc  Add a new document to the block chain
+
+app.post('/addDoc', function(req, res) {
+  debug('/addDoc request body %j', req.body);
+  debug(req.body.hash);
+  debug('hash equals %s', req.body.hash);
+  var params = req.body;
+  var hash = req.body.hash;
+
+  var invokeRequest = {
+    chaincodeID: chaincodeID,
+    fcn: 'addDoc',
+    args: [hash, JSON.stringify(params)]
+  };
+  debug('The invoke args = ', invokeRequest.args);
+
+  var invokeTx = userMember1.invoke(invokeRequest);
+  invokeTx.on('submitted', function(results) {
+    // Invoke transaction submitted successfully
+    console.log('Successfully submitted chaincode invoke transaction: ',
+    invokeRequest, results);
+    res.json(results);
+  });
+  invokeTx.on('error', function(err) {
+    // Invoke transaction submission failed
+    debug(err);
+    console.log('Failed to invoke addDoc: ' + err.msg);
+    res.status(500).send(err.msg);
+  });
+  invokeTx.on('complete', function(results) {
+    console.log('The completion results for /addDoc %j', results.result);
+  });
+});
+
+app.get('/verifyDoc/:hash', function(req, res) {
+  debug('received /verifyDoc with hash = %s', req.params.hash);
+  var queryRequest = {
+    chaincodeID: chaincodeID,
+    fcn: 'readDoc',
+    args: [req.params.hash]
+  };
+  var queryTx = userMember1.query(queryRequest);
+
+  // Success document found
+  queryTx.on('complete', function(results) {
+    debug('Successfully queried an existing document: %j ', results.result);
+    var params = JSON.parse(results.result);
+    console.log(params);
+    res.json(params);
+  });
+
+  // Fail document not found
+  queryTx.on('error', function(err) {
+    debug(err);
+    console.log('/verifyDoc query failed:  ', err.msg);
+    res.status(500).send(err.msg);
+  });
+});
+
 //  Add calls to the fabric rest interface until supportted by the SDK
 //initialize the block list
 var startUpdates = false;
@@ -305,7 +364,7 @@ setInterval(function() {
       console.log('Error updating the chain height ' + response.error);
     });
   }
-}, 10000);
+}, 60000);
 
 app.get('/chain', function(req, res) {
   debug('Display chain stats');

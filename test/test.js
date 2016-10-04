@@ -276,8 +276,7 @@ describe('Application REST interface', function() {
     it('should be able to verify the document exists', function(done) {
       this.timeout(4000);
       request
-      .post(url + '/verifyDoc')
-      .send({hsah: 'abcd1'})
+      .get(url + '/verifyDoc/' + 'abcd1')
       .end(function(err, res) {
         assert.isNull(err);
         assert.equal(res.status, 200, 'should recieve a 200 status');
@@ -292,8 +291,7 @@ describe('Application REST interface', function() {
     it('should report an error for an unknown hash value', function(done) {
       this.timeout(4000);
       request
-      .post(url + '/verifyDoc')
-      .send({hsah: 'abcd1234'})  //unknown hash value
+      .get(url + '/verifyDoc/' + 'abcd1234')
       .end(function(err, res) {
         assert.isNull(err);
         assert.equal(res.status, 200, 'should recieve a 200 status');
