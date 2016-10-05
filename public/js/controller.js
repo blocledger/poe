@@ -106,7 +106,7 @@ myApp.directive('blockExplorer', function() {
   };
 });
 
-myApp.controller('poeAppCtrl', ['$scope', function($scope) {
+myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
   $scope.hash = 'file hash';
   $scope.fileName = 'file name';
   $scope.calcHash = function(input) {
@@ -134,7 +134,26 @@ myApp.controller('poeAppCtrl', ['$scope', function($scope) {
         console.log($scope.hash);
       };
     }
-
+    $scope.submit = function() {
+      var params = {
+        'hash': $scope.hash,
+        'name': $scope.fileName,
+        'owner': $scope.owner
+      };
+      $http.post(baseUrl + '/addDoc', params).then(function(response) {
+        console.log(response);
+        if (response.data) {
+          console.log(response.data);
+          $scope.showAlert = true;
+          $scope.alertMsg = response.data;
+        }
+      }, function(response) {
+        console.log('an error happened on the $http.post');
+        console.log(response.data);
+        $scope.showErrorAlert = true;
+        $scope.alertErrorMsg = response.data;
+      });
+    };
   };
 }]).directive('poeApp', function() {
   return {
