@@ -2,9 +2,9 @@
 
 
 <fieldset>
-<legend>Input Document</legend>
+<legend>Verify Document</legend>
 
-<form class="form-horizontal" ng-submit="submit()">
+<form name="verifyDocForm" class="form-horizontal" ng-submit="verify()">
   <div class="form-group">
     <label for="fileDrop" class="col-sm-2 control-label">File drop</label>
     <div class="col-sm-10">
@@ -19,34 +19,34 @@
     </div>
   </div>
   <div class="form-group">
-    <label for=""></label>
-
-  </div>
-  <div class="form-group">
     <label for="hashDisplay" class="col-sm-2 control-label">SHA256 hash</label>
     <div class="col-sm-10">
-      <pre> <span ng-bind="hash"></span> </pre>
-    <!--  <input type="text" class="form-control" id="hashDisplay" ng-model="hash" readonly>  -->
+      <input type="text" class="form-control" id="hashDisplay" name="hashDisplay"
+      ng-model="hash" required ng-minlength="64" ng-maxlength="64">
     </div>
   </div>
   <div class="form-group">
     <label for="inputName" class="col-sm-2 control-label">Name</label>
     <div class="col-sm-10">
-      <input type="text" class="form-control" id="inputName" ng-model="fileName" placeholder="file name">
-    </div>
-  </div>
-  <div class="form-group">
-    <label for="inputOwner" class="col-sm-2 control-label">Owner</label>
-    <div class="col-sm-10">
-      <input type="text" class="form-control" id="inputOwner" ng-model="owner" placeholder="owner">
+      <input type="text" class="form-control" id="inputName" ng-model="fileName" >
     </div>
   </div>
   <div class="form-group">
     <div class="col-sm-offset-2 col-sm-10">
-      <button type="submit" class="btn btn-primary btn-lg">Add Doc</button>
+      <button type="submit" class="btn btn-primary btn-lg" ng-disabled="verifyDocForm.$invalid">Verify Doc</button>
     </div>
   </div>
 </form>
 </fieldset>
 
-<transaction-list></transaction-list>
+<!---  uncomment for debugging purposes
+<tt>verifyDocForm.hashDisplay.$valid = {{verifyDocForm.hashDisplay.$valid}}</tt><br/>
+<tt>verifyDocForm.hashDisplay.$error = {{verifyDocForm.hashDisplay.$error}}</tt><br/>
+<tt>verifyDocForm.$valid = {{verifyDocForm.$valid}}</tt><br/>
+<tt>verifyDocForm.$invalid = {{verifyDocForm.$invalid}}</tt><br/>
+<tt>verifyDocForm.$error.required = {{!!verifyDocForm.$error.required}}</tt><br/>
+<tt>verifyDocForm.$error.minlength = {{!!verifyDocForm.$error.minlength}}</tt><br/>
+<tt>verifyDocForm.$error.maxlength = {{!!verifyDocForm.$error.maxlength}}</tt><br/>
+-->
+
+  <transaction-alerts/>

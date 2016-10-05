@@ -23,6 +23,9 @@ angular.
         when('/poeApp', {
           template: '<poe-app></poe-app>'
         }).
+        when('/verifyDoc', {
+          template: '<verify-doc></verify-doc>'
+        }).
         when('/blockExplorer', {
           template: '<block-explorer></block-explorer>'
         }).

@@ -109,10 +109,7 @@ myApp.directive('blockExplorer', function() {
 myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
   $scope.hash = 'file hash';
   $scope.fileName = 'file name';
-  $scope.calcHash = function(input) {
-    console.log('calculating the hash...');
-    $scope.hash = sha256(input);
-  };
+
   $scope.hashFile = function(file) {
     var reader = new FileReader();
     console.log(file);
@@ -134,13 +131,80 @@ myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
         console.log($scope.hash);
       };
     }
-    $scope.submit = function() {
-      var params = {
-        'hash': $scope.hash,
-        'name': $scope.fileName,
-        'owner': $scope.owner
+  };
+  $scope.submit = function() {
+    var params = {
+      'hash': $scope.hash,
+      'name': $scope.fileName,
+      'owner': $scope.owner
+    };
+    $http.post(baseUrl + '/addDoc', params).then(function(response) {
+      console.log(response);
+      if (response.data) {
+        console.log(response.data);
+        $scope.showAlert = true;
+        $scope.alertMsg = response.data;
+      }
+    }, function(response) {
+      console.log('an error happened on the $http.post');
+      console.log(response.data);
+      $scope.showErrorAlert = true;
+      $scope.alertErrorMsg = response.data;
+    });
+  };
+}]).directive('poeApp', function() {
+  return {
+    controller: 'poeAppCtrl',
+    templateUrl: 'templates/poeApp.html'
+  };
+});
+myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
+  $scope.hash = 'file hash';
+  $scope.fileName = 'file name';
+
+  $scope.hashFile = function(file) {
+    var reader = new FileReader();
+    console.log(file);
+    if (!file) {
+      $scope.hash = 'file hash';
+      $scope.fileName = 'file name';
+    } else {
+      $scope.fileName = file.name;
+      $scope.hash = 'working...';
+      reader.readAsArrayBuffer(file);
+      reader.onload = function(evt) {
+        console.log(evt);
+        // console.log(reader.readyState);
+        // console.log(reader.result);
+        var newHash = sha256(reader.result);
+        $scope.$apply(function() {   //using the $apply will update the hash after the sha256 finishes otherwise it would wait for a mouse click
+          $scope.hash = newHash;
+        });
+        console.log($scope.hash);
       };
-      $http.post(baseUrl + '/addDoc', params).then(function(response) {
+    }
+  };
+  $scope.verify = function() {
+    console.log('verify button pushed.');
+    function verifyHash(hash) {
+      var hashValid = true;
+      if (!hash) {
+        hashValid = false;
+        console.log('no hash provided');
+      } else if (hash == 'file hash') {
+        hashValid = false;
+      } else if (hash.length != 64) {
+        hashValid = false;
+      }
+
+      if (hashValid === false) {
+        console.log('Invalid hash entered.');
+      }
+      return hashValid;
+    }
+    if (verifyHash($scope.hash) === true) {
+      $http.get(baseUrl + '/verifyDoc/' + $scope.hash)
+      .then(function(response) {
         console.log(response);
         if (response.data) {
           console.log(response.data);
@@ -153,11 +217,11 @@ myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
         $scope.showErrorAlert = true;
         $scope.alertErrorMsg = response.data;
       });
-    };
+    }
   };
-}]).directive('poeApp', function() {
+}]).directive('verifyDoc', function() {
   return {
-    controller: 'poeAppCtrl',
-    templateUrl: 'templates/poeApp.html'
+    controller: 'verifyDocCtrl',
+    templateUrl: 'templates/verifyDoc.html'
   };
 });
