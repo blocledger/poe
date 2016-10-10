@@ -12,6 +12,9 @@ so that its existence can be later proved through transaction queries.
 npm install -g gulp
 npm install -g mocha
 npm install
+
+npm install -g bower
+bower install
 ```
 
 
