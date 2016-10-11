@@ -52,7 +52,7 @@ user1 = {
 var userMember1;
 
 // Path to the local directory containing the chaincode project under $GOPATH
-var chaincodePath = 'github.com/blocks_chaincode/';  //local config
+var chaincodePath = 'github.com/chaincode/';  //local config
 // var chaincodePath = 'github.com/blocks_cc/';  // bluemix config
 // var chaincodePath = 'github.com/gerrit/fabric/examples/chaincode/go/chaincode_example02';
 
@@ -66,6 +66,12 @@ var deltaAB = '1';
 // Create a client chain.
 // The name can be anything as it is only used internally.
 var chain = hlc.newChain('targetChain');
+
+//  set the wait times for the chain
+chain.setDeployWaitTime(120);
+chain.setInvokeWaitTime(20);
+console.log('The deploy wait time: ' + chain.getDeployWaitTime());
+console.log('The invoke wait time: ' + chain.getInvokeWaitTime());
 
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
@@ -309,10 +315,14 @@ app.get('/verifyDoc/:hash', function(req, res) {
 
   // Success document found
   queryTx.on('complete', function(results) {
-    debug('Successfully queried an existing document: %j ', results.result);
-    var params = JSON.parse(results.result);
-    console.log(params);
-    res.json(params);
+    debug('Successfully queried an existing document: %j ', results);
+    if (results.result.length != 0) {
+      var params = JSON.parse(results.result);
+      console.log(params);
+      res.json(params);
+    } else {
+      res.status(500).send('Document not found');
+    }
   });
 
   // Fail document not found

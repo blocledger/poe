@@ -186,6 +186,11 @@ myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
   };
   $scope.verify = function() {
     console.log('verify button pushed.');
+    $scope.showAlert = false;
+    $scope.alertMsg = '';
+    $scope.showErrorAlert = false;
+    $scope.alertErrorMsg = '';
+
     function verifyHash(hash) {
       var hashValid = true;
       if (!hash) {
@@ -207,7 +212,6 @@ myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
       .then(function(response) {
         console.log(response);
         if (response.data) {
-          console.log(response.data);
           $scope.showAlert = true;
           $scope.alertMsg = response.data;
         }
