@@ -280,7 +280,7 @@ app.post('/addDoc', function(req, res) {
 
   if (hashValid === false) {
     console.log('The hash is invalid.');
-    return res.status(500).send('Error: invalid hash')
+    return res.status(500).send('Error: invalid hash');
   }
 
   debug('hash equals %s', req.body.hash);
@@ -324,7 +324,7 @@ app.get('/verifyDoc/:hash', function(req, res) {
   // Success document found
   queryTx.on('complete', function(results) {
     debug('Successfully queried an existing document: %j ', results);
-    if (results.result.length != 0) {
+    if (results.result.length !== 0) {
       var params = JSON.parse(results.result);
       console.log(params);
       res.json(params);
@@ -337,6 +337,36 @@ app.get('/verifyDoc/:hash', function(req, res) {
   queryTx.on('error', function(err) {
     debug(err);
     console.log('/verifyDoc query failed:  ', err.msg);
+    res.status(500).send(err.msg);
+  });
+});
+
+// list document
+// returns a list of all of the documents
+app.get('/listDoc', function(req, res) {
+  debug('received /listDoc');
+  var queryRequest = {
+    chaincodeID: chaincodeID,
+    fcn: 'listDoc',
+    args: []
+  };
+
+  var queryTx = userMember1.query(queryRequest);
+
+  queryTx.on('complete', function(results) {
+    debug('successfully queried for the document list.');
+    debug(results);
+    if (results.result.length !== 0) {
+      var list = JSON.parse(results.result);
+      res.json(list);
+    } else {
+      res.status(500).send('Document list invalid');
+    }
+  });
+
+  queryTx.on('error', function(err) {
+    debug(err);
+    console.log('/listDoc query failed:  ', err.msg);
     res.status(500).send(err.msg);
   });
 });

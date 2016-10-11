@@ -234,3 +234,24 @@ myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
     templateUrl: 'templates/verifyDoc.html'
   };
 });
+
+myApp.controller('listDocCtrl', ['$scope', '$http',
+    function($scope, $http) {
+  console.log('Get the document list');
+  $scope.docList = [];
+  $http.get(baseUrl + '/listDoc')
+  .success(function(response) {
+    console.log(response);
+    // convert the doc info from string to object
+    for (var hash in response) {
+      var doc = JSON.parse(response[hash]);
+      response[hash] = doc;
+    }
+    $scope.docList = response;
+  });
+}]).directive('listDoc', function() {
+  return {
+    controller: 'listDocCtrl',
+    templateUrl: 'templates/listDoc.html'
+  };
+});

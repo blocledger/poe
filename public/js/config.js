@@ -26,6 +26,9 @@ angular.
         when('/verifyDoc', {
           template: '<verify-doc></verify-doc>'
         }).
+        when('/listDoc', {
+          template: '<list-doc></list-doc>'
+        }).
         when('/blockExplorer', {
           template: '<block-explorer></block-explorer>'
         }).

@@ -1,0 +1,21 @@
+<h2 class="sub-header">Document List</h2>
+<div class="table-responsive" >
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Hash</th>
+        <th>File Name</th>
+        <th>Owner</th>
+        <th>Date</th>
+        <th>Tx ID</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr ng-repeat="(hash, doc) in docList" >
+        <td>{{ doc.Hash }}</td>
+        <td>{{ doc.Name }}</td>
+        <td>{{ doc.Owner }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
