@@ -67,12 +67,6 @@ var deltaAB = '1';
 // The name can be anything as it is only used internally.
 var chain = hlc.newChain('targetChain');
 
-//  set the wait times for the chain
-chain.setDeployWaitTime(120);
-chain.setInvokeWaitTime(20);
-console.log('The deploy wait time: ' + chain.getDeployWaitTime());
-console.log('The invoke wait time: ' + chain.getInvokeWaitTime());
-
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
 // The FileKeyValStore is a simple file-based KeyValStore.
@@ -274,7 +268,21 @@ app.get('/member', function(req, res) {
 
 app.post('/addDoc', function(req, res) {
   debug('/addDoc request body %j', req.body);
-  debug(req.body.hash);
+  var hashValid = true;
+  if (!req.body.hash) {
+    hashValid = false;
+    console.log('no hash provided');
+  } else if (req.body.hash == 'file hash') {
+    hashValid = false;
+  } else if (req.body.hash.length != 64) {
+    hashValid = false;
+  }
+
+  if (hashValid === false) {
+    console.log('The hash is invalid.');
+    return res.status(500).send('Error: invalid hash')
+  }
+
   debug('hash equals %s', req.body.hash);
   var params = req.body;
   var hash = req.body.hash;
@@ -291,7 +299,6 @@ app.post('/addDoc', function(req, res) {
     // Invoke transaction submitted successfully
     console.log('Successfully submitted chaincode invoke transaction: ',
     invokeRequest, results);
-    res.json(results);
   });
   invokeTx.on('error', function(err) {
     // Invoke transaction submission failed
@@ -301,6 +308,7 @@ app.post('/addDoc', function(req, res) {
   });
   invokeTx.on('complete', function(results) {
     console.log('The completion results for /addDoc %j', results.result);
+    res.json(results);
   });
 });
 

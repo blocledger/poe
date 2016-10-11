@@ -133,6 +133,11 @@ myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
     }
   };
   $scope.submit = function() {
+    $scope.showAlert = false;
+    $scope.alertMsg = '';
+    $scope.showErrorAlert = false;
+    $scope.alertErrorMsg = '';
+
     var params = {
       'hash': $scope.hash,
       'name': $scope.fileName,
