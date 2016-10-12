@@ -309,7 +309,7 @@ describe('Application REST interface', function() {
       this.timeout(4000);
       request
       .post(url + '/delDoc')
-      .send({name: 'abcd1'})
+      .send({hash: 'abcd1'})
       .end(function(err, res) {
       assert.isNull(err);
       //console.log(res.body);
@@ -321,7 +321,7 @@ describe('Application REST interface', function() {
       this.timeout(4000);
       request
       .post(url + '/delDoc')
-      .send({name: 'abcd2'})
+      .send({hash: 'abcd2'})
       .end(function(err, res) {
       assert.isNull(err);
       //console.log(res.body);

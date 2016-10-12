@@ -371,6 +371,39 @@ app.get('/listDoc', function(req, res) {
   });
 });
 
+// delDoc  Add a new document to the block chain
+
+app.post('/delDoc', function(req, res) {
+  debug('/delDoc request body %j', req.body);
+
+  debug('hash equals %s', req.body.hash);
+  var hash = req.body.hash;
+
+  var invokeRequest = {
+    chaincodeID: chaincodeID,
+    fcn: 'delDoc',
+    args: [hash]
+  };
+  debug('The invoke args = ', invokeRequest.args);
+
+  var invokeTx = userMember1.invoke(invokeRequest);
+  invokeTx.on('submitted', function(results) {
+    // Invoke transaction submitted successfully
+    console.log('Successfully submitted chaincode invoke transaction: ',
+    invokeRequest, results);
+  });
+  invokeTx.on('error', function(err) {
+    // Invoke transaction submission failed
+    debug(err);
+    console.log('Failed to invoke delDoc: ' + err.msg);
+    res.status(500).send(err.msg);
+  });
+  invokeTx.on('complete', function(results) {
+    console.log('The completion results for /delDoc %j', results.result);
+    res.json(results);
+  });
+});
+
 //  Add calls to the fabric rest interface until supportted by the SDK
 //initialize the block list
 var startUpdates = false;

@@ -240,15 +240,29 @@ myApp.controller('listDocCtrl', ['$scope', '$http',
   console.log('Get the document list');
   $scope.docList = [];
   $http.get(baseUrl + '/listDoc')
-  .success(function(response) {
+  .then(function(response) {
     console.log(response);
     // convert the doc info from string to object
-    for (var hash in response) {
-      var doc = JSON.parse(response[hash]);
-      response[hash] = doc;
+    for (var hash in response.data) {
+      var doc = JSON.parse(response.data[hash]);
+      response.data[hash] = doc;
     }
-    $scope.docList = response;
+    $scope.docList = response.data;
   });
+  $scope.delete = function(doc) {
+
+    var params = {
+      'hash': doc.Hash,
+    };
+    $http.post(baseUrl + '/delDoc', params)
+    .then(function(response) {
+      console.log('document %s deleted', doc.Hash);
+      //  refresh the list...
+      var newList = $scope.docList;
+      delete newList[doc.Hash];
+      $scope.doclist = newList;
+    });
+  };
 }]).directive('listDoc', function() {
   return {
     controller: 'listDocCtrl',

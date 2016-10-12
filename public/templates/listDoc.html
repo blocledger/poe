@@ -8,13 +8,20 @@
         <th>Owner</th>
         <th>Date</th>
         <th>Tx ID</th>
+        <th></th>
       </tr>
     </thead>
     <tbody>
       <tr ng-repeat="(hash, doc) in docList" >
-        <td>{{ doc.Hash }}</td>
+        <td><samp>{{ doc.Hash | limitTo: 30 }}</samp></td>
         <td>{{ doc.Name }}</td>
         <td>{{ doc.Owner }}</td>
+        <td></td>
+        <td></td>
+        <td>
+          <button class="btn btn-info" ng-click="transfer(doc)">Transfer</button>
+          <button class="btn btn-danger" ng-click="delete(doc)">Delete</button>
+        </td>
       </tr>
     </tbody>
   </table>
