@@ -1,19 +1,19 @@
 <h2 class="sub-header">Document List</h2>
-<div class="table-responsive" >
-  <table class="table table-striped">
+<!-- <div class="table-responsive" >  -->
+  <table class="table table-striped table-condensed hideOverflow">
     <thead>
       <tr>
-        <th>Hash</th>
-        <th>File Name</th>
-        <th>Owner</th>
-        <th>Date</th>
-        <th>Tx ID</th>
-        <th></th>
+        <th class="col-sm-2">Hash</th>
+        <th class="col-sm-2">File Name</th>
+        <th class="col-sm-1">Owner</th>
+        <th class="col-sm-1">Date</th>
+        <th class="col-sm-1">Tx ID</th>
+        <th class="col-sm-2"></th>
       </tr>
     </thead>
     <tbody>
       <tr ng-repeat="(hash, doc) in docList" >
-        <td><samp>{{ doc.Hash | limitTo: 30 }}</samp></td>
+        <td class="col-sm-2 " uib-popover="{{ doc.Hash }}" popover-placement="right" popover-append-to-body="true"><samp>{{ doc.Hash }}</samp></td>
         <td>{{ doc.Name }}</td>
         <td>{{ doc.Owner }}</td>
         <td></td>
@@ -25,4 +25,4 @@
       </tr>
     </tbody>
   </table>
-</div>
+<!-- </div>  -->

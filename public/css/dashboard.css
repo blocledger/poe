@@ -123,3 +123,15 @@ body {
   padding-top: 25px;
   /* margin: 10px; */
  }
+
+
+ .hideOverflow {
+   word-break: break-all;
+   word-wrap: break-word;
+   overflow: hidden;
+   text-overflow: ellipsis;
+ }
+
+ .popover {
+   max-width: 600px;
+ }
