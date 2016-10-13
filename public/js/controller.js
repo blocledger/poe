@@ -235,8 +235,8 @@ myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
   };
 });
 
-myApp.controller('listDocCtrl', ['$scope', '$http',
-    function($scope, $http) {
+myApp.controller('listDocCtrl', ['$scope', '$http', '$uibModal',
+function($scope, $http, $uibModal) {
   console.log('Get the document list');
   $scope.docList = [];
   $http.get(baseUrl + '/listDoc')
@@ -249,19 +249,37 @@ myApp.controller('listDocCtrl', ['$scope', '$http',
     }
     $scope.docList = response.data;
   });
-  $scope.delete = function(doc) {
 
-    var params = {
-      'hash': doc.Hash,
-    };
-    $http.post(baseUrl + '/delDoc', params)
-    .then(function(response) {
-      console.log('document %s deleted', doc.Hash);
-      //  refresh the list...
-      var newList = $scope.docList;
-      delete newList[doc.Hash];
-      $scope.doclist = newList;
+  $scope.delete = function(doc) {
+    var modalInstance = $uibModal.open({
+      templateUrl: 'templates/confirmModal.html',
+      controller: 'confirmModalCtrl',
+      size: 'sm',
     });
+    modalInstance.result.then(function () {  //Do this if the user selects the OK button
+      var params = {
+        'hash': doc.Hash,
+      };
+      $http.post(baseUrl + '/delDoc', params)
+      .then(function(response) {
+        console.log('document %s deleted', doc.Hash);
+        //  refresh the list...
+        var newList = $scope.docList;
+        delete newList[doc.Hash];
+        $scope.doclist = newList;
+      });
+    }, function () {
+      console.log('Modal dismissed at: ' + new Date());
+    });
+    // $scope.cancel = function() {
+    //   console.log('cancel button pressed');
+    //   $uibModalInstance.dismiss();
+    // };
+    // $scope.ok = function() {
+    //   console.log('ok button pressed');
+    //   $uibModalInstance.close();
+    // };
+
   };
 }]).directive('listDoc', function() {
   return {
@@ -269,3 +287,15 @@ myApp.controller('listDocCtrl', ['$scope', '$http',
     templateUrl: 'templates/listDoc.html'
   };
 });
+
+myApp.controller('confirmModalCtrl',['$scope', '$uibModalInstance', function($scope, $uibModalInstance) {
+  console.log('In confirmModalCtrl');
+  $scope.cancel = function() {
+    console.log('cancel button pressed');
+    $uibModalInstance.dismiss();
+  };
+  $scope.ok = function() {
+    console.log('ok button pressed');
+    $uibModalInstance.close();
+  };
+}]);
