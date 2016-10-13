@@ -404,7 +404,36 @@ app.post('/delDoc', function(req, res) {
   });
 });
 
-//  Add calls to the fabric rest interface until supportted by the SDK
+// editDoc  changes the owner of the doc but may be enhanced to include other parameters
+app.post('/editDoc', function(req, res) {
+  debug('/editDoc request body %j', req.body);
+  var hash = req.body.hash;
+
+  var invokeRequest = {
+    chaincodeID: chaincodeID,
+    fcn: 'transferDoc',
+    args: [req.body.hash, req.body.owner]
+  };
+  debug('The invoke args = ', invokeRequest.args);
+
+  var invokeTx = userMember1.invoke(invokeRequest);
+  invokeTx.on('submitted', function(results) {
+    // Invoke transaction submitted successfully
+    console.log('Successfully submitted chaincode invoke transaction: ',
+    invokeRequest, results);
+  });
+  invokeTx.on('error', function(err) {
+    // Invoke transaction submission failed
+    debug(err);
+    console.log('Failed to invoke transferDoc: ' + err.msg);
+    res.status(500).send(err.msg);
+  });
+  invokeTx.on('complete', function(results) {
+    console.log('The completion results for /transferDoc %j', results.result);
+    res.json(results);
+  });
+});
+
 //initialize the block list
 var startUpdates = false;
 util.updateChain(chainHeight).then(function(height) {

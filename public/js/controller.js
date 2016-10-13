@@ -250,13 +250,14 @@ function($scope, $http, $uibModal) {
     $scope.docList = response.data;
   });
 
+  // delete a document
   $scope.delete = function(doc) {
     var modalInstance = $uibModal.open({
       templateUrl: 'templates/confirmModal.html',
       controller: 'confirmModalCtrl',
       size: 'sm',
     });
-    modalInstance.result.then(function () {  //Do this if the user selects the OK button
+    modalInstance.result.then(function() {  //Do this if the user selects the OK button
       var params = {
         'hash': doc.Hash,
       };
@@ -268,18 +269,40 @@ function($scope, $http, $uibModal) {
         delete newList[doc.Hash];
         $scope.doclist = newList;
       });
-    }, function () {
+    }, function() {
       console.log('Modal dismissed at: ' + new Date());
     });
-    // $scope.cancel = function() {
-    //   console.log('cancel button pressed');
-    //   $uibModalInstance.dismiss();
-    // };
-    // $scope.ok = function() {
-    //   console.log('ok button pressed');
-    //   $uibModalInstance.close();
-    // };
+  };
 
+  //  Edit a document record.
+  $scope.edit = function(editDoc) {
+    var modalInstance = $uibModal.open({
+      templateUrl: 'templates/editModal.html',
+      controller: 'editModalCtrl',
+      size: '',
+      resolve: {
+        doc: function() {
+          return editDoc;
+        }
+      }
+    });
+    modalInstance.result.then(function(doc) {  //Do this if the user selects the OK button
+      console.log(doc);
+      var params = {
+        'hash': doc.Hash,
+        'owner': doc.Owner
+      };
+      $http.post(baseUrl + '/editDoc', params)
+      .then(function(response) {
+        console.log('document %s has changed', doc.Hash);
+        //  refresh the list...
+        var newList = $scope.docList;
+        newList[doc.Hash] = doc;
+        $scope.doclist = newList;
+      });
+    }, function() {
+      console.log('Modal dismissed at: ' + new Date());
+    });
   };
 }]).directive('listDoc', function() {
   return {
@@ -288,14 +311,33 @@ function($scope, $http, $uibModal) {
   };
 });
 
-myApp.controller('confirmModalCtrl',['$scope', '$uibModalInstance', function($scope, $uibModalInstance) {
+myApp.controller('confirmModalCtrl', ['$scope', '$uibModalInstance',
+function($scope, $uibModalInstance) {
   console.log('In confirmModalCtrl');
+
+  $scope.ok = function() {
+    console.log('ok button pressed');
+    $uibModalInstance.close();
+  };
   $scope.cancel = function() {
     console.log('cancel button pressed');
     $uibModalInstance.dismiss();
   };
+}]);
+
+myApp.controller('editModalCtrl', ['$scope', '$uibModalInstance', 'doc',
+function($scope, $uibModalInstance, doc) {
+  console.log('In editModalCtrl');
+  $scope.owner = doc.Owner;
+  $scope.editDoc = doc;
+
   $scope.ok = function() {
     console.log('ok button pressed');
-    $uibModalInstance.close();
+    $scope.editDoc.Owner = $scope.owner;
+    $uibModalInstance.close($scope.editDoc);
+  };
+  $scope.cancel = function() {
+    console.log('cancel button pressed');
+    $uibModalInstance.dismiss();
   };
 }]);
