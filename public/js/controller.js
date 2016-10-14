@@ -218,7 +218,9 @@ myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
         console.log(response);
         if (response.data) {
           $scope.showAlert = true;
-          $scope.alertMsg = response.data;
+          $scope.alertMsg = 'Document found in the blockchain.';
+          $scope.fileName = response.data.Name;
+          $scope.owner = response.data.Owner;
         }
       }, function(response) {
         console.log('an error happened on the $http.post');
