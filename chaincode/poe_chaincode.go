@@ -78,7 +78,7 @@ func  (t *SimpleChaincode) addDoc(stub shim.ChaincodeStubInterface, key string, 
 	var proof poe
 
 	fmt.Printf("addDoc: key = %s value = %s\n", key, arg)
-	value, err := stub.GetState(key)
+	_, err := stub.GetState(key)
 	if err == nil {
 		jsonResp := "{\"Error\":\"File already exists for key: " + key + "\"}"
 		return nil, errors.New(jsonResp)
