@@ -92,84 +92,27 @@ in.
 
 `node api.js`
 
-At this point you can connect from a browser using `http://localhost:3000`
+At this point you can connect from a browser using http://localhost:3000
 
-## Deploying chaincode with the SDK in windows
-This is the current workaround for deploying chaincode from a node app running
-under windows with the SDK.  The basic approach here is to create the chaincode
-in the Vagrant environment and build it.  Then copy the whole directory back
-to windows.
+## Deploying chaincode with the SDK
+In order for SDK to deploy chaincode it must be in a directory
+under $GOPATH/src/github.com/.  You also need to copy files from fabric tree into
+a vendor sub-directory along with the chaincode.  Once this directory is prepared
+set the chaincode path in the application to match and call the deploy.
 
-Inside the Vagrant environment do the following.
 ```
 cd $GOPATH/src/github.com/
-git clone https://github.com/blocledger/blocks_chaincode.git
-cd blocks_chaincode
+mkdir chaincode
+cd chaincode
+cp (path to poe source)/poe/chaincode/poe_chaincode.go .
 mkdir -p vendor/github.com/hyperledger
 cd vendor/github.com/hyperledger
 cp -r $GOPATH/src/github.com/hyperledger/fabric .
 cp -r fabric/vendor/github.com/op ..
-cd ../../..
-go build
 ```
 
-Now copy the whole blocks_chaincode directory back to windows and put it in `$GOPATH/src/github.com`
+To invoke the deploy from your browser go to URL http://localhost:3000/deploy
 
-To invoke the deploy from your browser go to URL `localhost:3000/deploy`
-
-**NOTE:** The Vagrant steps were gleaned from fabric/sdk/node/bin/run-unit-tests.sh.
-
-## Deploying chaincode with the REST interface
-Alternatively the REST interface can be used to deploy the chaincode from
-the Github repository.  The postman app works well for this.
-
-First step is to register one of the users defined in the membersrvc.yaml file.
-```
-POST http://localhost:7050/registrar
-
-BODY
-{
-      "enrollId": "jim",
-      "enrollSecret": "6avZQLwcUe9b"
-}
-
-
-POST  http://localhost:7050/chaincode
-
-body
-{
-  "jsonrpc": "2.0",
-  "method": "deploy",
-  "params": {
-    "type": 1,
-    "chaincodeID":{
-        "path":"https://github.com/ericmvaughn/blocks_chaincode"
-    },
-    "ctorMsg": {
-        "function":"init",
-        "args":["a", "1000", "b", "2000"]
-    },
-    "secureContext": "jim"
-  },
-  "id": "1"  
-}
-
-results
-{
-  "jsonrpc": "2.0",
-  "result": {
-    "status": "OK",
-    "message": "77dcb5e38265da1ef3f51edee25b3612085bcbd26262da4236da5ceb4387a655a3c60476c4aed35e1ca78dcdb6417a7e4c88965aa88ffa39878c7c8bde2a0772"
-  },
-  "id": "1"
-}
-
-```
-
-The message value in the results contains the chaincode ID that needs to be saved
-in the `tmp/keyValStore/chaincodeID` file.
-
-**NOTE:** A restart of node may be required at this point.
 
 ## Testing
 To run both the linter and code style checker run `gulp` with no parameters.
@@ -185,7 +128,7 @@ DEBUG=hfc,blocks node api.js
 DEBUG=hfc,blocks GRPC_TRACE=all node api.js
 ```
 ## Acknowledgement
-This project was based heavily on the IBM Marbles example and the Hyperledger
+This project was based on the IBM Marbles example and the Hyperledger
  [fabric](https://github.com/hyperledger/fabric) project.
 
 
