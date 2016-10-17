@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-//process.env['DEBUG'] = 'blocks,hfc'  //use this instead of setting DEBUG on the command line
+//process.env['DEBUG'] = 'poe,hfc'  //use this instead of setting DEBUG on the command line
 //process.env['GRPC_TRACE'] = 'all'  //turns on grpc tracing
 var app = require('express')();
 var morgan = require('morgan');
@@ -25,11 +25,11 @@ var util = require('./util.js');
 //var ByteBuffer = require("bytebuffer");
 //var hexy = require('hexy');
 var Q = require('q');
-var hlc = require('hfc');
+var hfc = require('hfc');
 // jscs:disable maximumLineLength
-// var hlc = require('C:/Users/Eric/Documents/Projects/BlockChain/go/src/github.com/hyperledger/fabric/sdk/node/');
+// var hfc = require('C:/Users/Eric/Documents/Projects/BlockChain/go/src/github.com/hyperledger/fabric/sdk/node/');
 // jscs:enable maximumLineLength
-var debug = require('debug')('blocks');
+var debug = require('debug')('poe');
 var rest = require('rest');
 var mime = require('rest/interceptor/mime');
 var errorCode = require('rest/interceptor/errorCode');
@@ -65,13 +65,13 @@ var deltaAB = '1';
 
 // Create a client chain.
 // The name can be anything as it is only used internally.
-var chain = hlc.newChain('targetChain');
+var chain = hfc.newChain('targetChain');
 
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
 // The FileKeyValStore is a simple file-based KeyValStore.
-chain.setKeyValStore(hlc.newFileKeyValStore('./tmp/keyValStore'));
-// chain.setKeyValStore(hlc.newFileKeyValStore('./tmp/bluemixKeyValStore'));
+chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/keyValStore'));
+// chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/bluemixKeyValStore'));
 var store = chain.getKeyValStore();
 
 store.getValue('chaincodeID', function(err, value) {

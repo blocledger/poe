@@ -67,7 +67,7 @@ vagrant ssh
   ```
   rm -r /var/hyperledger/production/
   ```
-  Also delete the files under `tmp/keyValStore` in the blocks source directory.
+  Also delete the files under `tmp/keyValStore` in the poe source directory.
   Note: Only delete these files the first time you run or anytime you delete the
   `/var/hyperledger/production` directory in vagrant.
 
@@ -123,9 +123,9 @@ capabilities run `gulp test`.
 ## Debugging
 Turn additional debug prints and/or GRPC tracing with
 ```
-DEBUG=hfc,blocks node api.js
+DEBUG='hfc,poe' node api.js
   or
-DEBUG=hfc,blocks GRPC_TRACE=all node api.js
+DEBUG='hfc,poe' GRPC_TRACE=all node api.js
 ```
 ## Acknowledgement
 This project was based on the IBM Marbles example and the Hyperledger

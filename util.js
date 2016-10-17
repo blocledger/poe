@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
-var debug = require('debug')('blocks');
+var debug = require('debug')('poe');
 var ProtoBuf = require('protobufjs');
 
 // use the hfc protos once hfc has been released for fabric 0.6
