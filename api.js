@@ -70,6 +70,13 @@ var chain = hfc.newChain('targetChain');
 // Configure the KeyValStore which is used to store sensitive keys
 // as so it is important to secure this storage.
 // The FileKeyValStore is a simple file-based KeyValStore.
+// check that the ./tmp directory existsSync
+if (!fs.existsSync('./tmp')) {
+  fs.mkdirSync('./tmp');
+}
+if (!fs.existsSync('./tmp')) {
+  throw new Error('Could not create the ./tmp directory');
+}
 chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/keyValStore'));
 // chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/bluemixKeyValStore'));
 var store = chain.getKeyValStore();
