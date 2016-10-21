@@ -94,6 +94,81 @@ in.
 
 At this point you can connect from a browser using http://localhost:3000
 
+## Docker Fabric blockchain
+
+The blockchain can be run on your local machine using docker containers for the
+membership service and peer nodes.  The instructions below assume that you already
+have docker installed and running.
+
+### Pull images from DockerHub
+
+Pull the peer and membership services images.
+```
+docker pull hyperledger/fabric-peer
+docker pull hyperledger/fabric-membersrvc
+```
+Pull the fabric base image using the newest available tag since this repository is
+not using the latest tag.  For examples:
+```
+docker pull hyperledger/fabric-baseimage:x86_64-0.1.0
+```
+Next give the fabric-baseimage the 'latest' tag so that software can use it.  Replace 'db53d04b117c' in the following command with the image ID from your docker repository.
+```
+docker tag db53d04b117c hyperledger/fabric-baseimage:latest
+```
+Create a docker-compose.yml file with the following contents.
+```
+membersrvc:
+  image: hyperledger/fabric-membersrvc
+  ports:
+    - "7054:7054"
+  command: membersrvc
+
+vp0:
+  image: hyperledger/fabric-peer
+  ports:
+    - "7050:7050"
+    - "7051:7051"
+    - "7052:7052"
+  environment:
+    - CORE_PEER_ADDRESSAUTODETECT=true
+    - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
+    - CORE_LOGGING_LEVEL=DEBUG
+    - CORE_PEER_ID=vp0
+    - CORE_SECURITY_ENROLLID=test_vp0
+    - CORE_SECURITY_ENROLLSECRET=MwYpmSRjupbT
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+  links:
+    - membersrvc
+  command: sh -c "sleep 5; peer node start"
+```
+To create the containers and start them issue the following command.
+```
+docker-compose up
+```
+To check that the containers are running
+```
+docker ps
+```
+To see what version peer you are running
+```
+docker exec -it hyperledger2_vp0_1 bash
+peer --version
+exit
+```
+To stop the containers
+```
+docker stop hyperledger2_vp0_1
+docker stop hyperledger2_membersrvc_1
+```
+To start the containers (Note: merbersrvc needs to start first)
+```
+docker start hyperledger2_membersrvc_1
+docker start hyperledger2_vp0_1
+```
+
+
 ## Deploying chaincode with the SDK
 In order for SDK to deploy chaincode it must be in a directory
 under $GOPATH/src/github.com/.  You also need to copy files from fabric tree into
