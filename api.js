@@ -50,6 +50,7 @@ user1 = {
 };
 
 var userMember1;
+var userMember2;
 
 // Path to the local directory containing the chaincode project under $GOPATH
 var chaincodePath = 'github.com/chaincode/';  //local config
@@ -212,8 +213,6 @@ app.get('/', function(req, res) {
 });
 
 // provide an endpoint that will deploy the chaincode
-//  TODO  This failed when trying to use bluemix and had to deploy using
-//  Postman with the REST interface.  Althogh that wasn't smooth either
 app.get('/deploy', function(req, res) {
   // Construct the deploy request
   var deployRequest = {
@@ -258,14 +257,17 @@ app.get('/deploy', function(req, res) {
 });
 
 app.get('/member', function(req, res) {
-  //lets call all of the get functions and see what we get
-  console.log('user is registered ' + userMember1.isRegistered() +
-              ' is enrolled ' + userMember1.isEnrolled());
-  debug('getName: ');
-  debug(userMember1.getName());
-  //debug(JSON.stringify(userMember1.getChain()));
+  // check to see if the user is enrolled
+  if (!userMember1) {
+    return res.status(500).send('User does not exist.');
+  } else if (!userMember1.isRegistered()) {
+    return res.status(500).send('User is not properly registered.');
+  } else if (!userMember1.isEnrolled()) {
+    return res.status(500).send('User is not properly enrolled.');
+  }
+  console.log('User %s is registered and enrolled.', userMember1.getName());
 
-  res.send('userMember1.getChain()');
+  res.send('User is registered and enrolled. Name: ' + userMember1.getName());
 });
 
 // Add support for the Applicaion specific REST calls
