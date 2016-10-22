@@ -7,9 +7,14 @@ import (
 	"fmt"
 	"errors"
 //	"strconv"
-
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
+
+type Time struct {
+	Seconds int64
+	Nanos	int32
+}
+
 
 type poe struct {
 	Name string
@@ -17,7 +22,8 @@ type poe struct {
 	Version string
 	Owner string
 	hashType string
-	txID string
+	TxID string
+	Date Time
 }
 
 
@@ -91,7 +97,13 @@ func  (t *SimpleChaincode) addDoc(stub shim.ChaincodeStubInterface, key string, 
 	fmt.Println(proof)
 	proof.Version = "1.0"
 	proof.Hash = key;
-	proof.txID = stub.GetTxID()
+	proof.TxID = stub.GetTxID()
+	time , err := stub.GetTxTimestamp()
+	if err != nil {
+		return nil, errors.New("addDoc: Can NOT GetTxTimestamp")
+	}
+	proof.Date.Seconds = time.Seconds
+	proof.Date.Nanos = time.Nanos
 	b, err := json.Marshal(proof)
 	if err != nil {
 		return nil, errors.New("addDoc: Can NOT Marshal arg")
