@@ -224,6 +224,12 @@ app.get('/deploy', function(req, res) {
 
   deployRequest.chaincodePath = chaincodePath;
 
+  // check to see if the user is enrolled
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log('Deploy failed. ' + result.msg);
+    return res.status(500).send('Deploy failed. ' + result.msg);
+  }
   // Trigger the deploy transaction
   var deployTx = userMember1.deploy(deployRequest);
 
@@ -258,16 +264,13 @@ app.get('/deploy', function(req, res) {
 
 app.get('/member', function(req, res) {
   // check to see if the user is enrolled
-  if (!userMember1) {
-    return res.status(500).send('User does not exist.');
-  } else if (!userMember1.isRegistered()) {
-    return res.status(500).send('User is not properly registered.');
-  } else if (!userMember1.isEnrolled()) {
-    return res.status(500).send('User is not properly enrolled.');
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
   }
-  console.log('User %s is registered and enrolled.', userMember1.getName());
-
-  res.send('User is registered and enrolled. Name: ' + userMember1.getName());
+  console.log(result.msg);
+  res.send(result.msg);
 });
 
 // Add support for the Applicaion specific REST calls
@@ -303,6 +306,12 @@ app.post('/addDoc', function(req, res) {
   };
   debug('The invoke args = ', invokeRequest.args);
 
+  // check to see if the user is enrolled
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
   var invokeTx = userMember1.invoke(invokeRequest);
   invokeTx.on('submitted', function(results) {
     // Invoke transaction submitted successfully
@@ -328,6 +337,13 @@ app.get('/verifyDoc/:hash', function(req, res) {
     fcn: 'readDoc',
     args: [req.params.hash]
   };
+
+  // check to see if the user is enrolled
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
   var queryTx = userMember1.query(queryRequest);
 
   // Success document found
@@ -360,6 +376,12 @@ app.get('/listDoc', function(req, res) {
     args: []
   };
 
+  // check to see if the user is enrolled
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
   var queryTx = userMember1.query(queryRequest);
 
   queryTx.on('complete', function(results) {
@@ -395,6 +417,12 @@ app.post('/delDoc', function(req, res) {
   };
   debug('The invoke args = ', invokeRequest.args);
 
+  // check to see if the user is enrolled
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
   var invokeTx = userMember1.invoke(invokeRequest);
   invokeTx.on('submitted', function(results) {
     // Invoke transaction submitted successfully
@@ -425,6 +453,12 @@ app.post('/editDoc', function(req, res) {
   };
   debug('The invoke args = ', invokeRequest.args);
 
+  // check to see if the user is enrolled
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
   var invokeTx = userMember1.invoke(invokeRequest);
   invokeTx.on('submitted', function(results) {
     // Invoke transaction submitted successfully

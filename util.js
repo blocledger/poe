@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 var debug = require('debug')('poe');
-var ProtoBuf = require('protobufjs');
+var util = require('util');
 
+var ProtoBuf = require('protobufjs');
 // use the hfc protos once hfc has been released for fabric 0.6
 var builder = ProtoBuf.loadProtoFile(
               './node_modules/hfc/lib/protos/fabric.proto');    // Creates the Builder
@@ -252,6 +253,26 @@ var calcBalance = function(transaction, result, user, oldBalance) {
   return newBalance;
 };
 
+var checkUser = function(user) {
+  var errorCode = 10;
+  var errorMsg = 'msg not set yet';
+  if (!user) {
+    errorCode = 1;
+    errorMsg = 'User does not exist.';
+  } else if (!user.isRegistered()) {
+    errorCode = 2;
+    errorMsg = 'User is not properly registered.';
+  } else if (!user.isEnrolled()) {
+    errorCode = 3;
+    errorMsg = 'User is not properly enrolled.';
+  } else {
+    errorCode = 0;
+    errorMsg = util.format('User %s is registered and enrolled.',
+                            user.getName());
+  }
+  return {err: errorCode, msg: errorMsg};
+};
+
 exports.decodePayload = decodePayload;
 exports.decodeChaincodeID = decodeChaincodeID;
 exports.decodeType = decodeType;
@@ -260,3 +281,4 @@ exports.updateChain = updateChain;
 exports.initialBlockList = initialBlockList;
 exports.buildBlockList = buildBlockList;
 exports.calcBalance = calcBalance;
+exports.checkUser = checkUser;
