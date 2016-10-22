@@ -12,7 +12,7 @@
     </thead>
     <tbody>
       <tr ng-repeat="tx in transactionList track by $index" ng-class="{danger: tx.result.errorCode}" >
-        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{tx.transaction.txid | limitTo:30}}</a></td>
+        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{tx.transaction.txid }}</a></td>
         <td>{{tx.transaction.timestamp.seconds * 1000 | date:"medium"}}</td>
         <td>{{tx.transaction.type}}</td>
         <td>{{tx.transaction.payload.chaincodeSpec.ctorMsg.args}}</td>

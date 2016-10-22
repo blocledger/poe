@@ -17,6 +17,7 @@ type poe struct {
 	Version string
 	Owner string
 	hashType string
+	txID string
 }
 
 
@@ -78,7 +79,7 @@ func  (t *SimpleChaincode) addDoc(stub shim.ChaincodeStubInterface, key string, 
 	var proof poe
 
 	fmt.Printf("addDoc: key = %s value = %s\n", key, arg)
-	value , err = stub.GetState(key)
+	value , err := stub.GetState(key)
 	if value != nil {
 		jsonResp := "{\"Error\":\"File already exists for key: " + key + "\"}"
 		return nil, errors.New(jsonResp)
@@ -90,6 +91,7 @@ func  (t *SimpleChaincode) addDoc(stub shim.ChaincodeStubInterface, key string, 
 	fmt.Println(proof)
 	proof.Version = "1.0"
 	proof.Hash = key;
+	proof.txID = stub.GetTxID()
 	b, err := json.Marshal(proof)
 	if err != nil {
 		return nil, errors.New("addDoc: Can NOT Marshal arg")
