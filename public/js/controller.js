@@ -108,7 +108,7 @@ myApp.directive('blockExplorer', function() {
 
 myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
   $scope.hash = 'file hash';
-  $scope.fileName = 'file name';
+  $scope.fileName = '';
 
   $scope.hashFile = function(file) {
     var reader = new FileReader();
@@ -165,7 +165,7 @@ myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
 });
 myApp.controller('verifyDocCtrl', ['$scope', '$http', '$filter',
 function($scope, $http, $filter) {
-  $scope.hash = 'file hash';
+  $scope.hash = '';
   $scope.fileName = '';
   $scope.date = '';
   $scope.owner = '';
@@ -175,7 +175,7 @@ function($scope, $http, $filter) {
     var reader = new FileReader();
     console.log(file);
     if (!file) {
-      $scope.hash = 'file hash';
+      $scope.hash = '';
       $scope.fileName = '';
     } else {
       $scope.fileName = file.name;
