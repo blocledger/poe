@@ -59,10 +59,8 @@ var chaincodePath = 'github.com/chaincode/';  //local config
 
 var chaincodeID;
 
-// Initializing values for chaincode parameters
-var initA = '100';
-var initB = '200';
-var deltaAB = '1';
+// Confidentiality setting
+var confidentialSetting = false;
 
 // Create a client chain.
 // The name can be anything as it is only used internally.
@@ -97,8 +95,8 @@ store.getValue('chaincodeID', function(err, value) {
 // var grpc = 'grpcs://';
 
 //  local config no TLS
-// var cred = require('./cred-local.json');
-var cred = require('./cred-docker.json');
+var cred = require('./cred-local.json');
+// var cred = require('./cred-docker.json');
 var grpc = 'grpc://';
 
 // URL for the REST interface to the peer
@@ -202,6 +200,32 @@ chain.enroll('WebAppAdmin', credUser.secret, function(err, webAppAdmin) {
   });
 });
 
+// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
+//Setup the event hub to listen for new blocks
+debug('Setting up the event hub...');
+var eventHub = new hfc.EventHub();
+// var eventHub = chain.getEventHub();
+
+// Connect the event hub to the first peer in the credentials file
+eventHub.setPeerAddr('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
+eventHub.connect();
+
+//try to follow what the event test does
+// chain.eventHubConnect('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
+// chain.eventHubConnect(cred.peers[0].discovery_host + ':' + '7053');
+// var eventHub = chain.getEventHub();
+
+var registerEvent = eventHub.registerBlockEvent(function(event) {
+  debug('received a new event from the Event Hub.');
+  debug(event);
+});
+debug('eventHub isconnected: ' + eventHub.isconnected());
+
+process.on('exit', function (){
+  chain.eventHubDisconnect();
+});
+// jscs:enable requireCamelCaseOrUpperCaseIdentifiers
+
 app.use(morgan('dev'));
 app.use(require('express').static(__dirname + '/public'));
 //app.use(require('body-parser').urlencoded({ extended: true }));
@@ -217,7 +241,8 @@ app.get('/deploy', function(req, res) {
   // Construct the deploy request
   var deployRequest = {
     fcn: 'init',
-    args: ['a', initA, 'b', initB],
+    args: [],
+    confidential: confidentialSetting,
     //certificatePath: '/certs/blockchain-cert.pem'  //added for bluemix
   };
   debug('Deployment request %j ', deployRequest);
@@ -302,7 +327,8 @@ app.post('/addDoc', function(req, res) {
   var invokeRequest = {
     chaincodeID: chaincodeID,
     fcn: 'addDoc',
-    args: [hash, JSON.stringify(params)]
+    args: [hash, JSON.stringify(params)],
+    confidential: confidentialSetting
   };
   debug('The invoke args = ', invokeRequest.args);
 
@@ -413,7 +439,8 @@ app.post('/delDoc', function(req, res) {
   var invokeRequest = {
     chaincodeID: chaincodeID,
     fcn: 'delDoc',
-    args: [hash]
+    args: [hash],
+    confidential: confidentialSetting
   };
   debug('The invoke args = ', invokeRequest.args);
 
@@ -449,7 +476,8 @@ app.post('/editDoc', function(req, res) {
   var invokeRequest = {
     chaincodeID: chaincodeID,
     fcn: 'transferDoc',
-    args: [req.body.hash, req.body.owner]
+    args: [req.body.hash, req.body.owner],
+    confidential: confidentialSetting
   };
   debug('The invoke args = ', invokeRequest.args);
 
@@ -496,12 +524,13 @@ util.updateChain(chainHeight).then(function(height) {
 });
 
 // periodically fetch the currnet block height
-setInterval(function() {
+// setInterval(function() {
+var blockListUpdateEvents = eventHub.registerBlockEvent(function(event) {
   if (startUpdates === true) {
     util.updateChain(chainHeight).then(function(height) {
-      debug('Block chain height is ' + height);
+      // debug('Block chain height is ' + height);
       var last = blockList[blockList.length - 1].id;
-      debug('The end of the block list is ' + last);
+      // debug('The end of the block list is ' + last);
       if (height > last + 1) {
         util.buildBlockList(last + 1, height).then(function(values) {
           debug('There are additional blocks of length ' + values.length);
@@ -511,19 +540,20 @@ setInterval(function() {
         });
       }
       chainHeight = height;
-      debug('The new chain height is ' + chainHeight);
+      // debug('The new chain height is ' + chainHeight);
     }, function(response) {
       console.log(response);
       console.log('Error updating the chain height ' + response.error);
     });
   }
-}, 60000);
+});
+// }, 10000);
 
 app.get('/chain', function(req, res) {
-  debug('Display chain stats');
+  // debug('Display chain stats');
   restClient(restUrl + '/chain/')
   .then(function(response) {
-    debug(response.entity);
+    // debug(response.entity);
     res.json(response.entity);
   }, function(response) {
     console.log(response);

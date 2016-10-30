@@ -29,8 +29,8 @@ var mime = require('rest/interceptor/mime');
 var errorCode = require('rest/interceptor/errorCode');
 var restClient = rest.wrap(mime).wrap(errorCode, {code: 400});
 // var cred = require('./cred-blockchain-ma.json');
-// var cred = require('./cred-local.json');
-var cred = require('./cred-docker.json');
+var cred = require('./cred-local.json');
+// var cred = require('./cred-docker.json');
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 var restUrl = cred.peers[0].api_url;
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
@@ -159,11 +159,11 @@ var decodeBlock = function(block) {
 };
 
 var updateChain = function(height) {
-  debug('Calling the REST endpoint GET /chain/');
+  // debug('Calling the REST endpoint GET /chain/');
   return restClient(restUrl + '/chain/')
   .then(function(response) {
-    debug(response.entity);
-    debug('Returning height of ' + response.entity.height);
+    // debug(response.entity);
+    // debug('Returning height of ' + response.entity.height);
     return response.entity.height;
   }, function(response) {
     console.log(response);
@@ -178,7 +178,7 @@ var getFormattedBlock = function(id) {
     debug('getFormattedBlock: got block ' + id);
     var value = response.entity;
     value = decodeBlock(value);
-    debug(value);
+    // debug(value);
     return {id: id, block: value};
   });
 };
