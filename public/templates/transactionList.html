@@ -1,22 +1,22 @@
 <h2 class="sub-header">Transaction List</h2>
-<div class="table-responsive" >
+<div class="hideOverflow">
   <table class="table table-striped">
     <thead>
       <tr>
-        <th>Transaction ID</th>
+        <th  class="col-sm-2">Transaction ID</th>
         <th>Time</th>
         <th>Type</th>
-        <th>Playload </th>
-        <th>Chaincode ID</th>
+        <th class="col-sm-4">Playload </th>
+        <th class="col-sm-2">Chaincode ID</th>
       </tr>
     </thead>
     <tbody>
       <tr ng-repeat="tx in transactionList track by $index" ng-class="{danger: tx.result.errorCode}" >
-        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{tx.transaction.txid | limitTo:30}}</a></td>
+        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{tx.transaction.txid }}</a></td>
         <td>{{tx.transaction.timestamp.seconds * 1000 | date:"medium"}}</td>
         <td>{{tx.transaction.type}}</td>
         <td>{{tx.transaction.payload.chaincodeSpec.ctorMsg.args}}</td>
-        <td>{{tx.transaction.chaincodeID.name | limitTo:30}}</td>
+        <td>{{tx.transaction.chaincodeID.name }}</td>
       </tr>
     </tbody>
   </table>

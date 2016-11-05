@@ -108,7 +108,7 @@ myApp.directive('blockExplorer', function() {
 
 myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
   $scope.hash = 'file hash';
-  $scope.fileName = 'file name';
+  $scope.fileName = '';
 
   $scope.hashFile = function(file) {
     var reader = new FileReader();
@@ -163,16 +163,20 @@ myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
     templateUrl: 'templates/poeApp.html'
   };
 });
-myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
-  $scope.hash = 'file hash';
-  $scope.fileName = 'file name';
+myApp.controller('verifyDocCtrl', ['$scope', '$http', '$filter',
+function($scope, $http, $filter) {
+  $scope.hash = '';
+  $scope.fileName = '';
+  $scope.date = '';
+  $scope.owner = '';
+  $scope.tx = '';
 
   $scope.hashFile = function(file) {
     var reader = new FileReader();
     console.log(file);
     if (!file) {
-      $scope.hash = 'file hash';
-      $scope.fileName = 'file name';
+      $scope.hash = '';
+      $scope.fileName = '';
     } else {
       $scope.fileName = file.name;
       $scope.hash = 'working...';
@@ -195,6 +199,10 @@ myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
     $scope.alertMsg = '';
     $scope.showErrorAlert = false;
     $scope.alertErrorMsg = '';
+    $scope.fileName = '';
+    $scope.date = '';
+    $scope.owner = '';
+    $scope.tx = '';
 
     function verifyHash(hash) {
       var hashValid = true;
@@ -221,6 +229,10 @@ myApp.controller('verifyDocCtrl', ['$scope', '$http', function($scope, $http) {
           $scope.alertMsg = 'Document found in the blockchain.';
           $scope.fileName = response.data.Name;
           $scope.owner = response.data.Owner;
+          var milliseconds = response.data.Date.Seconds * 1000 +
+                             response.data.Date.Nanos / 1000000;
+          $scope.date = $filter('date')(milliseconds, 'medium');
+          $scope.tx = response.data.TxID;
         }
       }, function(response) {
         console.log('an error happened on the $http.post');

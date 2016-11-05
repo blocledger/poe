@@ -14,8 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 var debug = require('debug')('poe');
-var ProtoBuf = require('protobufjs');
+var util = require('util');
 
+var ProtoBuf = require('protobufjs');
 // use the hfc protos once hfc has been released for fabric 0.6
 var builder = ProtoBuf.loadProtoFile(
               './node_modules/hfc/lib/protos/fabric.proto');    // Creates the Builder
@@ -28,8 +29,8 @@ var mime = require('rest/interceptor/mime');
 var errorCode = require('rest/interceptor/errorCode');
 var restClient = rest.wrap(mime).wrap(errorCode, {code: 400});
 // var cred = require('./cred-blockchain-ma.json');
-// var cred = require('./cred-local.json');
-var cred = require('./cred-docker.json');
+var cred = require('./cred-local.json');
+// var cred = require('./cred-docker.json');
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 var restUrl = cred.peers[0].api_url;
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
@@ -158,11 +159,11 @@ var decodeBlock = function(block) {
 };
 
 var updateChain = function(height) {
-  debug('Calling the REST endpoint GET /chain/');
+  // debug('Calling the REST endpoint GET /chain/');
   return restClient(restUrl + '/chain/')
   .then(function(response) {
-    debug(response.entity);
-    debug('Returning height of ' + response.entity.height);
+    // debug(response.entity);
+    // debug('Returning height of ' + response.entity.height);
     return response.entity.height;
   }, function(response) {
     console.log(response);
@@ -177,7 +178,7 @@ var getFormattedBlock = function(id) {
     debug('getFormattedBlock: got block ' + id);
     var value = response.entity;
     value = decodeBlock(value);
-    debug(value);
+    // debug(value);
     return {id: id, block: value};
   });
 };
@@ -252,6 +253,26 @@ var calcBalance = function(transaction, result, user, oldBalance) {
   return newBalance;
 };
 
+var checkUser = function(user) {
+  var errorCode = 10;
+  var errorMsg = 'msg not set yet';
+  if (!user) {
+    errorCode = 1;
+    errorMsg = 'User does not exist.';
+  } else if (!user.isRegistered()) {
+    errorCode = 2;
+    errorMsg = 'User is not properly registered.';
+  } else if (!user.isEnrolled()) {
+    errorCode = 3;
+    errorMsg = 'User is not properly enrolled.';
+  } else {
+    errorCode = 0;
+    errorMsg = util.format('User %s is registered and enrolled.',
+                            user.getName());
+  }
+  return {err: errorCode, msg: errorMsg};
+};
+
 exports.decodePayload = decodePayload;
 exports.decodeChaincodeID = decodeChaincodeID;
 exports.decodeType = decodeType;
@@ -260,3 +281,4 @@ exports.updateChain = updateChain;
 exports.initialBlockList = initialBlockList;
 exports.buildBlockList = buildBlockList;
 exports.calcBalance = calcBalance;
+exports.checkUser = checkUser;
