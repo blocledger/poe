@@ -202,28 +202,28 @@ chain.enroll('WebAppAdmin', credUser.secret, function(err, webAppAdmin) {
 
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 //Setup the event hub to listen for new blocks
-debug('Setting up the event hub...');
-var eventHub = new hfc.EventHub();
-// var eventHub = chain.getEventHub();
-
-// Connect the event hub to the first peer in the credentials file
-eventHub.setPeerAddr('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
-eventHub.connect();
-
-//try to follow what the event test does
-// chain.eventHubConnect('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
-// chain.eventHubConnect(cred.peers[0].discovery_host + ':' + '7053');
-// var eventHub = chain.getEventHub();
-
-var registerEvent = eventHub.registerBlockEvent(function(event) {
-  debug('received a new event from the Event Hub.');
-  debug(event);
-});
-debug('eventHub isconnected: ' + eventHub.isconnected());
-
-process.on('exit', function (){
-  chain.eventHubDisconnect();
-});
+// debug('Setting up the event hub...');
+// var eventHub = new hfc.EventHub();
+// // var eventHub = chain.getEventHub();
+//
+// // Connect the event hub to the first peer in the credentials file
+// eventHub.setPeerAddr('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
+// eventHub.connect();
+//
+// //try to follow what the event test does
+// // chain.eventHubConnect('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
+// // chain.eventHubConnect(cred.peers[0].discovery_host + ':' + '7053');
+// // var eventHub = chain.getEventHub();
+//
+// var registerEvent = eventHub.registerBlockEvent(function(event) {
+//   debug('received a new event from the Event Hub.');
+//   debug(event);
+// });
+// debug('eventHub isconnected: ' + eventHub.isconnected());
+//
+// process.on('exit', function (){
+//   chain.eventHubDisconnect();
+// });
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
 
 app.use(morgan('dev'));
@@ -524,8 +524,8 @@ util.updateChain(chainHeight).then(function(height) {
 });
 
 // periodically fetch the currnet block height
-// setInterval(function() {
-var blockListUpdateEvents = eventHub.registerBlockEvent(function(event) {
+setInterval(function() {
+  // var blockListUpdateEvents = eventHub.registerBlockEvent(function(event) {
   if (startUpdates === true) {
     util.updateChain(chainHeight).then(function(height) {
       // debug('Block chain height is ' + height);
@@ -546,8 +546,8 @@ var blockListUpdateEvents = eventHub.registerBlockEvent(function(event) {
       console.log('Error updating the chain height ' + response.error);
     });
   }
-});
-// }, 10000);
+  // });
+}, 10000);
 
 app.get('/chain', function(req, res) {
   // debug('Display chain stats');
