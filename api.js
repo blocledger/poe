@@ -529,7 +529,10 @@ setInterval(function() {
   if (startUpdates === true) {
     util.updateChain(chainHeight).then(function(height) {
       // debug('Block chain height is ' + height);
-      var last = blockList[blockList.length - 1].id;
+      var last = 0;
+      if (blockList.length > 0) {
+        last = blockList[blockList.length - 1].id;
+      }
       // debug('The end of the block list is ' + last);
       if (height > last + 1) {
         util.buildBlockList(last + 1, height).then(function(values) {
@@ -544,6 +547,9 @@ setInterval(function() {
     }, function(response) {
       console.log(response);
       console.log('Error updating the chain height ' + response.error);
+    }).catch(function(err) {
+      console.log('The updateChain function has failed.');
+      console.log(err);
     });
   }
   // });
