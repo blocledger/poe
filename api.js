@@ -224,6 +224,35 @@ chain.enroll('WebAppAdmin', credUser.secret, function(err, webAppAdmin) {
 // process.on('exit', function (){
 //   chain.eventHubDisconnect();
 // });
+
+// Configure eventhub to report chain events
+// chain.eventHubConnect('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
+// var eventHub = chain.getEventHub();
+var eventHub = new hfc.EventHub();
+eventHub.setPeerAddr('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
+eventHub.connect();
+debug('eventHub isconnected: ' + eventHub.isconnected());
+
+// read chaincodeID from the keyValStore to avoid time issues
+store.getValue('chaincodeID', function(err, value) {
+  if (err) {
+    console.log('error getting chaincodeID ' + err);
+  }
+  if (value) {
+    chaincodeID = value.trim();
+    debug('registering for chaincode events.');
+    var registerEvent = eventHub.registerChaincodeEvent(chaincodeID, 'Poe',
+    function(event) {
+      debug('received a new event from the Event Hub.');
+      debug(event);
+    });
+  }
+});
+
+process.on('exit', function (){
+  chain.eventHubDisconnect();
+});
+
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
 
 app.use(morgan('dev'));
