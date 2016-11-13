@@ -17,9 +17,10 @@ var debug = require('debug')('poe');
 var util = require('util');
 
 var ProtoBuf = require('protobufjs');
-// use the hfc protos once hfc has been released for fabric 0.6
+// needed proto files
+//    chaincode.proto - chaincodeID
 var builder = ProtoBuf.loadProtoFile(
-              './node_modules/hfc/lib/protos/fabric.proto');    // Creates the Builder
+              './node_modules/hfc/lib/protos/chaincode.proto');    // Creates the Builder
 // jscs:disable maximumLineLength
 // var builder = ProtoBuf.loadProtoFile('C:/Users/Eric/Documents/Projects/BlockChain/go/src/github.com/hyperledger/fabric/sdk/node/lib/protos/fabric.proto');
 // jscs:enable maximumLineLength
@@ -166,8 +167,8 @@ var updateChain = function(height) {
     // debug('Returning height of ' + response.entity.height);
     return response.entity.height;
   }, function(response) {
-    console.log(response);
-    console.log('Error path: There was an error getting the chain_stats:',
+    //console.log(response);
+    console.log('Error path: failed getting the chain_stats for updateChain:',
                 response.status.code, response.entity.Error);
   });
 };

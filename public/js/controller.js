@@ -25,7 +25,7 @@ function($scope, $http, $interval) {
   getHeight();
   var stopUpdate = $interval(function() {
     getHeight();
-  }, 60000);
+  }, 600000);
   function getHeight() {
     $http.get(baseUrl + '/chain').success(function(response) {
       //console.log('got chain_stats');
@@ -152,7 +152,7 @@ myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
       }
     }, function(response) {
       console.log('an error happened on the $http.post');
-      console.log(response.data);
+      console.log(response);
       $scope.showErrorAlert = true;
       $scope.alertErrorMsg = response.data;
     });

@@ -22,13 +22,8 @@ var atob = require('atob');
 var fs = require('fs');
 var ProtoBuf = require('protobufjs');
 var util = require('./util.js');
-//var ByteBuffer = require("bytebuffer");
-//var hexy = require('hexy');
 var Q = require('q');
 var hfc = require('hfc');
-// jscs:disable maximumLineLength
-// var hfc = require('C:/Users/Eric/Documents/Projects/BlockChain/go/src/github.com/hyperledger/fabric/sdk/node/');
-// jscs:enable maximumLineLength
 var debug = require('debug')('poe');
 var rest = require('rest');
 var mime = require('rest/interceptor/mime');
@@ -39,7 +34,6 @@ var  chainHeight = 1;
 var blockList = [];
 
 // Configure test users
-//
 // Set the values required to register a user with the certificate authority.
 user1 = {
   name: 'WebApp_user1',
@@ -54,10 +48,9 @@ var userMember2;
 
 // Path to the local directory containing the chaincode project under $GOPATH
 var chaincodePath = 'github.com/chaincode/';  //local config
-// var chaincodePath = 'github.com/blocks_cc/';  // bluemix config
-// var chaincodePath = 'github.com/gerrit/fabric/examples/chaincode/go/chaincode_example02';
 
 var chaincodeID;
+var proposedChaincodeID;
 
 // Confidentiality setting
 var confidentialSetting = false;
@@ -66,9 +59,7 @@ var confidentialSetting = false;
 // The name can be anything as it is only used internally.
 var chain = hfc.newChain('targetChain');
 
-// Configure the KeyValStore which is used to store sensitive keys
-// as so it is important to secure this storage.
-// The FileKeyValStore is a simple file-based KeyValStore.
+// Configure the KeyValueStore which is used to store sensitive keys
 // check that the ./tmp directory existsSync
 if (!fs.existsSync('./tmp')) {
   fs.mkdirSync('./tmp');
@@ -76,67 +67,44 @@ if (!fs.existsSync('./tmp')) {
 if (!fs.existsSync('./tmp')) {
   throw new Error('Could not create the ./tmp directory');
 }
-chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/keyValStore'));
-// chain.setKeyValStore(hfc.newFileKeyValStore('./tmp/bluemixKeyValStore'));
-var store = chain.getKeyValStore();
+chain.setKeyValueStore(hfc.newKeyValueStore({
+  path: './tmp/keyValStore'
+}));
+var store = chain.getKeyValueStore();
 
-store.getValue('chaincodeID', function(err, value) {
-  if (err) {
+store.getValue('chaincodeID')
+.then(
+  function(value) {
+    chaincodeID = value.trim();
+    debug('chaincodeID = ' + chaincodeID);
+  }, function(err) {
     console.log('error getting chaincodeID ' + err);
   }
-  if (value) {
-    chaincodeID = value.trim();
-  }
+)
+.catch(function(err) {
+  console.log(err);
 });
 
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
-// load bluemix credentials from file-based
-// var cred = require('./cred-blockchain-ma.json');
-// var grpc = 'grpcs://';
-
 //  local config no TLS
 var cred = require('./cred-local.json');
-// var cred = require('./cred-docker.json');
+
 var grpc = 'grpc://';
 
-// URL for the REST interface to the peer
-//var restUrl = 'http://localhost:5000';
 var restUrl = cred.peers[0].api_url;
 
 // Set the URL for member services
-//chain.setMemberServicesUrl('grpc://localhost:50051');
-var caName = Object.keys(cred.ca)[0];
-var ca = cred.ca[caName];
-debug(caName);
-debug(grpc + ca.url);
-var cert;
-// the next line was recommended in issue #2373
-// chain.setECDSAModeForGRPC(true);  //may not be needed anymore
+chain.setMemberServicesUrl(grpc + cred.ca.url);
 
-if (fs.existsSync('us.blockchain.ibm.com.cert')) {
-  debug('found cert');
-  cert = fs.readFileSync('us.blockchain.ibm.com.cert');
-}
+// set orderer
+chain.setOrderer(grpc + cred.orderer.url);
 
-if (cert) {
-  chain.setMemberServicesUrl(grpc + ca.url, cert);
-} else {
-  chain.setMemberServicesUrl(grpc + ca.url);
-}
-debug(cert);
-
-// Add a peer's URL
-for (var i = 0; i < cred.peers.length; i++) {
-  var peer = cred.peers[i];
-  var url = grpc + peer.discovery_host + ':' + peer.discovery_port;
-  debug(url);
-  if (cert) {
-    chain.addPeer(url, cert);
-  } else {
-    chain.addPeer(url);
-  }
-}
-//chain.addPeer('grpc://localhost:30303');
+// Get a peer object
+var peerUrl = grpc +
+              cred.peers[0].discovery_host + ':' +
+              cred.peers[0].discovery_port;
+var peer = hfc.getPeer(peerUrl);
+debug(peerUrl);
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
 
 // search the user list for WebAppAdmin and return the password
@@ -144,43 +112,23 @@ var credUser = cred.users.find(function(u) {
   return u.username == 'WebAppAdmin';
 });
 debug(credUser.secret);
-// Enroll "WebAppAdmin" which is already registered because it is
-// listed in fabric/membersrvc/membersrvc.yaml with it's one time password.
-// If "WebAppAdmin" has already been registered, this will still succeed
-// because it stores the state in the KeyValStore
-// (i.e. in '/tmp/keyValStore' in this sample).
-chain.enroll('WebAppAdmin', credUser.secret, function(err, webAppAdmin) {
-  if (err) {
-    return console.log('ERROR: failed to register webAppAdmin', err);
-  }
-  // Successfully enrolled WebAppAdmin during initialization.
-  // Set this user as the chain's registrar which is authorized to register other users.
-  chain.setRegistrar(webAppAdmin);
-  // Now begin listening for web app requests
-  //listenForUserRequests();
-  var theReg = chain.getRegistrar().getName();
-  debug('The registrar is ' + theReg);
-  //debug(webAppAdmin);
 
-  //  For bluemix use an already defined user and just call enroll
-  // var user3 = cred.users[3];
-  // chain.enroll(user3.enrollId, user3.enrollSecret, function(err, user) {
-  //   if (err) {
-  //     return console.log('user_type1 enroll error: ' + err);
-  //   }
-  //   if (user.isEnrolled()) {
-  //     userMember1 = user;
-  //     return;
-  //   }
-  // });
-  // the code below is used to register and enroll a user for the local config
-  chain.getUser(user1.name, function(err, user) {
-    if (err) {
-      return console.log('getUser error: ' + err);
-    }
+chain.enroll('WebAppAdmin', credUser.secret)
+.then(
+  function(webAppAdmin) {
+    chain.setRegistrar(webAppAdmin);
+    return chain.getUser(user1.name);
+  },
+  function(err) {
+    console.log('ERROR: failed to register webAppAdmin', err);
+  }
+).then(
+  function(user) {
     if (user.isEnrolled()) {
-      userMember1 = user;
-      return;
+      debug('user is already enrolled');
+      // Since user is already enrolled we can return it synchornously to the
+      // next .then vs. calling the async registerAndEnroll
+      return user;
     }
     debug(user);
     // User is not enrolled yet, so perform both registration and enrollment
@@ -191,44 +139,23 @@ chain.enroll('WebAppAdmin', credUser.secret, function(err, webAppAdmin) {
       account: user1.account,
       affiliation: user1.affiliation
     };
-    user.registerAndEnroll(registrationRequest, function(err) {
-      if (err) {
-        return console.log('registerAndEnroll error: ' + err);
-      }
-      userMember1 = user;
-    });
-  });
-});
-
-// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
-//Setup the event hub to listen for new blocks
-// debug('Setting up the event hub...');
-// var eventHub = new hfc.EventHub();
-// // var eventHub = chain.getEventHub();
-//
-// // Connect the event hub to the first peer in the credentials file
-// eventHub.setPeerAddr('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
-// eventHub.connect();
-//
-// //try to follow what the event test does
-// // chain.eventHubConnect('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
-// // chain.eventHubConnect(cred.peers[0].discovery_host + ':' + '7053');
-// // var eventHub = chain.getEventHub();
-//
-// var registerEvent = eventHub.registerBlockEvent(function(event) {
-//   debug('received a new event from the Event Hub.');
-//   debug(event);
-// });
-// debug('eventHub isconnected: ' + eventHub.isconnected());
-//
-// process.on('exit', function (){
-//   chain.eventHubDisconnect();
-// });
-// jscs:enable requireCamelCaseOrUpperCaseIdentifiers
+    return user.registerAndEnroll(registrationRequest);
+  },
+  function(err) {
+    console.log('getUser error: ' + err);
+  }
+).then(
+  function(user) {
+    userMember1 = user;
+    debug('userMember1 has been set');
+  },
+  function(err) {
+    console.log('registerAndEnroll error: ' + err);
+  }
+);
 
 app.use(morgan('dev'));
 app.use(require('express').static(__dirname + '/public'));
-//app.use(require('body-parser').urlencoded({ extended: true }));
 app.use(bodyparser.json());
 
 app.get('/', function(req, res) {
@@ -240,14 +167,14 @@ app.get('/', function(req, res) {
 app.get('/deploy', function(req, res) {
   // Construct the deploy request
   var deployRequest = {
+    target: peer,
+    chaincodePath: chaincodePath,
     fcn: 'init',
     args: [],
-    confidential: confidentialSetting,
+    //confidential: confidentialSetting,
     //certificatePath: '/certs/blockchain-cert.pem'  //added for bluemix
   };
   debug('Deployment request %j ', deployRequest);
-
-  deployRequest.chaincodePath = chaincodePath;
 
   // check to see if the user is enrolled
   var result = util.checkUser(userMember1);
@@ -255,36 +182,71 @@ app.get('/deploy', function(req, res) {
     console.log('Deploy failed. ' + result.msg);
     return res.status(500).send('Deploy failed. ' + result.msg);
   }
-  // Trigger the deploy transaction
-  var deployTx = userMember1.deploy(deployRequest);
 
-  // Print the deploy results
-  deployTx.on('complete', function(results) {
-    // Deploy request completed successfully
-    console.log('deploy results: ' + results);
-    // Set the testChaincodeID for subsequent tests
-    chaincodeID = results.chaincodeID;
-    store.setValue('chaincodeID',
-    chaincodeID,
-    function(err) {
-      if (err) {
-        console.log('error saving chaincodeid. ' + err);
+  userMember1.sendDeploymentProposal(deployRequest)
+  .then(
+    function(results) {
+      debug('received proposal results');
+      console.log(results);
+      var proposalResponse = results[0];
+      var proposal = results[1];
+      if (proposalResponse &&
+        proposalResponse.response &&
+        proposalResponse.response.status === 200) {
+        console.log('Successfully sent Proposal and received ' +
+        'ProposalResponse: Status - %s, message - "%s", metadata - "%s", ' +
+        'endorsement signature: %s', proposalResponse.response.status,
+        proposalResponse.response.message, proposalResponse.response.payload,
+        proposalResponse.endorsement.signature);
+        proposedChaincodeID = proposalResponse.chaincodeId;
+        return userMember1.sendTransaction(proposalResponse, proposal);
+      } else {
+        console.log('sendDeploymentProposal failed');
+        console.log(proposalResponse);
+        console.log(proposalResponse.response);
+        console.log(proposalResponse.response.status);
+        return res.status(500).send('Deploy proposal failed. ');
       }
-    });
-    console.log('chaincodeID: ' + chaincodeID);
-    debug('Successfully deployed chaincode: request/response ' +
-          deployRequest + results);
-    debug(results);
-    res.json(results);
-  });
-  deployTx.on('error', function(err) {
-    // Deploy request failed
-    console.log('there was an error deploying the chaincode ' + err);
-    debug('Failed to deploy chaincode: request/error %j ', err);
-    debug(err);
-    res.json(err);
-  });
-  //res.send('Chaincode deployed ' + deployRequest);
+    },
+    function(err) {
+      // Deploy proposal failed
+      console.log('Error getting deploy proposol for the chaincode ' + err);
+      debug('Failed to get the chaincode deploy proposal: request/error %j ',
+            err);
+      debug(err);
+      res.json(err);
+    }
+  ).catch(
+    function(err) {
+      console.log('Depoly failed');
+      console.log(err);
+      return res.status(500).send('Deploy failed. ' + err);
+    }
+  ).then(
+    function(response) {
+      if (response.Status == 'SUCCESS') {
+        console.log(response);
+        chaincodeID = proposedChaincodeID;
+        store.setValue('chaincodeID', chaincodeID)
+        .then(function(response) {
+          debug('setValue response from storing chaincodeID is ' + response);
+        }, function(err) {
+          if (err) {
+            console.log('error saving chaincodeid. ' + err);
+          }
+        })
+        .catch(function(err) {
+          console.log(err);
+        });
+      }
+      res.json(response);  //return response reguardless of success or not
+    },
+    function(err) {
+      console.log('Error sending the deploy transaction');
+      return res.status(500).send('Deploy transaction failed. ' + err);
+    }
+  );
+
 });
 
 app.get('/member', function(req, res) {
@@ -301,8 +263,73 @@ app.get('/member', function(req, res) {
 // Add support for the Applicaion specific REST calls
 // addDoc, listDoc, transferDoc, verifyDoc, and delDoc
 
-// addDoc  Add a new document to the block chain
+// invoke function
+function invoke(user, invokeRequest, res) {
+  // check to see if the user is enrolled
+  var result = util.checkUser(user);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
+  user.sendTransactionProposal(invokeRequest)
+  .then(function(results) {
+    debug('received proposal results');
+    console.log(results);
+    var proposalResponse = results[0];
+    var proposal = results[1];
+    if (proposalResponse &&
+      proposalResponse.response &&
+      proposalResponse.response.status === 200) {
+      console.log('Successfully sent Proposal and received ProposalResponse: ' +
+                   'Status - %s, message - "%s", metadata - "%j", ' +
+                   'endorsement signature: %s',
+                   proposalResponse.response.status,
+                   proposalResponse.response.message,
+                   proposalResponse.response.payload,
+                   proposalResponse.endorsement.signature);
+      return user.sendTransaction(proposalResponse, proposal);
+    } else {
+      console.log('sendTransactionProposal failed');
+      console.log(proposalResponse);
+      throw new Error('Proposal failed and returned status ' +
+                (proposalResponse.response.status ?
+                  proposalResponse.response.status : 'other than 200'));
+    }
+  }).then(function(response) {
+    return res.json(response);
+  }).catch(function(err) {    // The rejections from all of the promises are handled here
+    console.log(err);
+    console.log('invoke failed: ' + err);
+    return res.status(500).send(err.toString());
+  });
+}
 
+// query
+function query(user, queryRequest, res) {
+  // check to see if the user is enrolled
+  var result = util.checkUser(user);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
+  user.queryByChaincode(queryRequest)
+  .then(function(results) {
+    if (results.result.length !== 0) {
+      var params = JSON.parse(results.result);
+      console.log(params);
+      res.json(params);
+    } else {
+      console.log('Query failed');
+      throw new Error('Query failed');
+    }
+  }).catch(function(err) {
+    console.log(err);
+    console.log('query failed: ' + err);
+    return res.status(500).send(err.toString());
+  });
+}
+
+// addDoc  Add a new document to the block chain
 app.post('/addDoc', function(req, res) {
   debug('/addDoc request body %j', req.body);
   var hashValid = true;
@@ -325,71 +352,27 @@ app.post('/addDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    chaincodeID: chaincodeID,
+    target: peer,
+    chaincodeId: chaincodeID,
     fcn: 'addDoc',
     args: [hash, JSON.stringify(params)],
-    confidential: confidentialSetting
   };
   debug('The invoke args = ', invokeRequest.args);
+  debug(invokeRequest);
 
-  // check to see if the user is enrolled
-  var result = util.checkUser(userMember1);
-  if (result.err !== 0) {
-    console.log(result.msg);
-    return res.status(500).send(result.msg);
-  }
-  var invokeTx = userMember1.invoke(invokeRequest);
-  invokeTx.on('submitted', function(results) {
-    // Invoke transaction submitted successfully
-    console.log('Successfully submitted chaincode invoke transaction: ',
-    invokeRequest, results);
-  });
-  invokeTx.on('error', function(err) {
-    // Invoke transaction submission failed
-    debug(err);
-    console.log('Failed to invoke addDoc: ' + err.msg);
-    res.status(500).send(err.msg);
-  });
-  invokeTx.on('complete', function(results) {
-    console.log('The completion results for /addDoc %j', results.result);
-    res.json(results);
-  });
+  invoke(userMember1, invokeRequest, res);
 });
 
 app.get('/verifyDoc/:hash', function(req, res) {
   debug('received /verifyDoc with hash = %s', req.params.hash);
   var queryRequest = {
-    chaincodeID: chaincodeID,
+    target: peer,
+    chaincodeId: chaincodeID,
     fcn: 'readDoc',
     args: [req.params.hash]
   };
 
-  // check to see if the user is enrolled
-  var result = util.checkUser(userMember1);
-  if (result.err !== 0) {
-    console.log(result.msg);
-    return res.status(500).send(result.msg);
-  }
-  var queryTx = userMember1.query(queryRequest);
-
-  // Success document found
-  queryTx.on('complete', function(results) {
-    debug('Successfully queried an existing document: %j ', results);
-    if (results.result.length !== 0) {
-      var params = JSON.parse(results.result);
-      console.log(params);
-      res.json(params);
-    } else {
-      res.status(500).send('Document not found');
-    }
-  });
-
-  // Fail document not found
-  queryTx.on('error', function(err) {
-    debug(err);
-    console.log('/verifyDoc query failed:  ', err.msg);
-    res.status(500).send(err.msg);
-  });
+  query(userMember1, queryRequest, res);
 });
 
 // list document
@@ -397,35 +380,13 @@ app.get('/verifyDoc/:hash', function(req, res) {
 app.get('/listDoc', function(req, res) {
   debug('received /listDoc');
   var queryRequest = {
-    chaincodeID: chaincodeID,
+    target: peer,
+    chaincodeId: chaincodeID,
     fcn: 'listDoc',
     args: []
   };
 
-  // check to see if the user is enrolled
-  var result = util.checkUser(userMember1);
-  if (result.err !== 0) {
-    console.log(result.msg);
-    return res.status(500).send(result.msg);
-  }
-  var queryTx = userMember1.query(queryRequest);
-
-  queryTx.on('complete', function(results) {
-    debug('successfully queried for the document list.');
-    debug(results);
-    if (results.result.length !== 0) {
-      var list = JSON.parse(results.result);
-      res.json(list);
-    } else {
-      res.status(500).send('Document list invalid');
-    }
-  });
-
-  queryTx.on('error', function(err) {
-    debug(err);
-    console.log('/listDoc query failed:  ', err.msg);
-    res.status(500).send(err.msg);
-  });
+  query(userMember1, queryRequest, res);
 });
 
 // delDoc  Add a new document to the block chain
@@ -437,35 +398,14 @@ app.post('/delDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    chaincodeID: chaincodeID,
+    target: peer,
+    chaincodeId: chaincodeID,
     fcn: 'delDoc',
     args: [hash],
-    confidential: confidentialSetting
   };
   debug('The invoke args = ', invokeRequest.args);
 
-  // check to see if the user is enrolled
-  var result = util.checkUser(userMember1);
-  if (result.err !== 0) {
-    console.log(result.msg);
-    return res.status(500).send(result.msg);
-  }
-  var invokeTx = userMember1.invoke(invokeRequest);
-  invokeTx.on('submitted', function(results) {
-    // Invoke transaction submitted successfully
-    console.log('Successfully submitted chaincode invoke transaction: ',
-    invokeRequest, results);
-  });
-  invokeTx.on('error', function(err) {
-    // Invoke transaction submission failed
-    debug(err);
-    console.log('Failed to invoke delDoc: ' + err.msg);
-    res.status(500).send(err.msg);
-  });
-  invokeTx.on('complete', function(results) {
-    console.log('The completion results for /delDoc %j', results.result);
-    res.json(results);
-  });
+  invoke(userMember1, invokeRequest, res);
 });
 
 // editDoc  changes the owner of the doc but may be enhanced to include other parameters
@@ -474,35 +414,14 @@ app.post('/editDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    chaincodeID: chaincodeID,
+    target: peer,
+    chaincodeId: chaincodeID,
     fcn: 'transferDoc',
     args: [req.body.hash, req.body.owner],
-    confidential: confidentialSetting
   };
   debug('The invoke args = ', invokeRequest.args);
 
-  // check to see if the user is enrolled
-  var result = util.checkUser(userMember1);
-  if (result.err !== 0) {
-    console.log(result.msg);
-    return res.status(500).send(result.msg);
-  }
-  var invokeTx = userMember1.invoke(invokeRequest);
-  invokeTx.on('submitted', function(results) {
-    // Invoke transaction submitted successfully
-    console.log('Successfully submitted chaincode invoke transaction: ',
-    invokeRequest, results);
-  });
-  invokeTx.on('error', function(err) {
-    // Invoke transaction submission failed
-    debug(err);
-    console.log('Failed to invoke transferDoc: ' + err.msg);
-    res.status(500).send(err.msg);
-  });
-  invokeTx.on('complete', function(results) {
-    console.log('The completion results for /transferDoc %j', results.result);
-    res.json(results);
-  });
+  invoke(userMember1, invokeRequest, res);
 });
 
 //initialize the block list
@@ -545,7 +464,7 @@ setInterval(function() {
       chainHeight = height;
       // debug('The new chain height is ' + chainHeight);
     }, function(response) {
-      console.log(response);
+      //console.log(response);
       console.log('Error updating the chain height ' + response.error);
     }).catch(function(err) {
       console.log('The updateChain function has failed.');
@@ -553,7 +472,7 @@ setInterval(function() {
     });
   }
   // });
-}, 10000);
+}, 600000);
 
 app.get('/chain', function(req, res) {
   // debug('Display chain stats');
@@ -562,7 +481,7 @@ app.get('/chain', function(req, res) {
     // debug(response.entity);
     res.json(response.entity);
   }, function(response) {
-    console.log(response);
+    //console.log(response);
     console.log('Error path: There was an error getting the chain_stats:',
                 response.status.code, response.entity);
     res.status(response.status.code)
@@ -583,7 +502,7 @@ app.get('/chain/blocks/:id', function(req, res) {
       res.json(response.entity);
     }
   }, function(response) {
-    console.log(response);
+    //console.log(response);
     console.log('Error path: There was an error getting the block_stats:',
                 response.status.code, response.entity.Error);
     res.send('Error path: There was an error getting the block stats.  ' +
@@ -607,7 +526,7 @@ app.get('/payload/:id', function(req, res) {
       res.json(payload);
     }
   }, function(response) {
-    console.log(response);
+    //console.log(response);
     console.log('Error path: There was an error getting the block_stats:',
                 response.status.code, response.entity.Error);
     res.send('Error path: There was an error getting the block stats.  ' +
