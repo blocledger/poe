@@ -8,6 +8,7 @@
         <th>Transactions</th>
         <th>State Hash</th>
         <th>Previous Block Hash </th>
+        <th>Events</th>
       </tr>
     </thead>
     <tbody>
@@ -17,6 +18,10 @@
         <td>{{block.block.transactions.length}}</td>
         <td>{{block.block.stateHash | limitTo:30}}</td>
         <td>{{block.block.previousBlockHash | limitTo:30}}</td>
+        <td><p ng-repeat="event in block.block.nonHashData.chaincodeEvents">
+                      {{event.payload | limitTo:30}}
+            </p>
+        </td>
       </tr>
     </tbody>
   </table>

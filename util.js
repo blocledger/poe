@@ -24,13 +24,14 @@ var builder = ProtoBuf.loadProtoFile(
 // var builder = ProtoBuf.loadProtoFile('C:/Users/Eric/Documents/Projects/BlockChain/go/src/github.com/hyperledger/fabric/sdk/node/lib/protos/fabric.proto');
 // jscs:enable maximumLineLength
 var PROTOS = builder.build('protos');                            // Returns just the 'js' namespace if that's all we need
+var atob = require('atob');
 var rest = require('rest');
 var mime = require('rest/interceptor/mime');
 var errorCode = require('rest/interceptor/errorCode');
 var restClient = rest.wrap(mime).wrap(errorCode, {code: 400});
 // var cred = require('./cred-blockchain-ma.json');
-var cred = require('./cred-local.json');
-// var cred = require('./cred-docker.json');
+// var cred = require('./cred-local.json');
+var cred = require('./cred-docker.json');
 // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 var restUrl = cred.peers[0].api_url;
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
@@ -140,8 +141,24 @@ var decodeType = function(transaction) {
   return transaction.type;
 };
 
+function decodeChancodeEvent(event) {
+  if (event.payload) {
+    //debug(event.payload);
+    event.payload = atob(event.payload).toString();
+    //debug(event.payload);
+  }
+  return event;
+}
+
 var decodeBlock = function(block) {
   var newBlock = block;
+  if (block.nonHashData.chaincodeEvents) {
+    var len = block.nonHashData.chaincodeEvents.length;
+    for (var i = 0; i < len; i++) {
+      newBlock.nonHashData.chaincodeEvents[i] =
+                decodeChancodeEvent(newBlock.nonHashData.chaincodeEvents[i]);
+    }
+  }
   if (!block.transactions) {
     return block;
   }

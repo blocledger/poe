@@ -95,8 +95,8 @@ store.getValue('chaincodeID', function(err, value) {
 // var grpc = 'grpcs://';
 
 //  local config no TLS
-var cred = require('./cred-local.json');
-// var cred = require('./cred-docker.json');
+// var cred = require('./cred-local.json');
+var cred = require('./cred-docker.json');
 var grpc = 'grpc://';
 
 // URL for the REST interface to the peer
@@ -230,7 +230,7 @@ chain.enroll('WebAppAdmin', credUser.secret, function(err, webAppAdmin) {
 // var eventHub = chain.getEventHub();
 var eventHub = new hfc.EventHub();
 eventHub.setPeerAddr('grpc://' + cred.peers[0].discovery_host + ':' + '7053');
-eventHub.connect();
+//eventHub.connect();
 debug('eventHub isconnected: ' + eventHub.isconnected());
 
 // read chaincodeID from the keyValStore to avoid time issues
