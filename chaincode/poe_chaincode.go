@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"errors"
+//	"time"
 //	"strconv"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
 )
@@ -14,7 +15,6 @@ type Time struct {
 	Seconds int64
 	Nanos	int32
 }
-
 
 type poe struct {
 	Name string
@@ -87,6 +87,10 @@ func  (t *SimpleChaincode) addDoc(stub shim.ChaincodeStubInterface, key string, 
 	fmt.Printf("addDoc: key = %s value = %s\n", key, arg)
 	value , err := stub.GetState(key)
 	if value != nil {
+		err = stub.SetEvent("poe", []byte("Document Already Exists"))
+		if err != nil {
+			return nil, err
+		}
 		jsonResp := "{\"Error\":\"File already exists for key: " + key + "\"}"
 		return nil, errors.New(jsonResp)
 	}
@@ -154,6 +158,10 @@ func  (t *SimpleChaincode) readDoc(stub shim.ChaincodeStubInterface, key string)
 	fmt.Printf("readDoc: key = %s\n", key)
 	value, err := stub.GetState(key)
 	if err != nil {
+		err = stub.SetEvent("poe", []byte("Document Does Not Exist"))
+		if err != nil {
+			return nil, err
+		}
 		jsonResp := "{\"Error\":\"Failed to get state for " + key + "\"}"
 		return nil, errors.New(jsonResp)
 	}
