@@ -314,10 +314,11 @@ function query(user, queryRequest, res) {
   }
   user.queryByChaincode(queryRequest)
   .then(function(results) {
-    if (results.result.length !== 0) {
-      var params = JSON.parse(results.result);
+    debug(results);
+    if (results) {
+      var params = results.toString();
       console.log(params);
-      res.json(params);
+      res.json(JSON.parse(params));
     } else {
       console.log('Query failed');
       throw new Error('Query failed');
