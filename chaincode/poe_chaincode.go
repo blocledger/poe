@@ -219,6 +219,16 @@ func (t *SimpleChaincode) Invoke(stub shim.ChaincodeStubInterface, function stri
 			return nil, errors.New("transferDoc: Incorrect number of arguments. Expecting 2")
 		}
 		return t.transferDoc(stub, args[0], args[1])
+	case "listDoc":
+		if len(args) != 0 {
+			return nil, errors.New("listDoc: Incorrect number of arguments. Expecting 0")
+		}
+		return t.listDoc(stub)
+	case "readDoc":
+		if len(args) != 1 {
+			return nil, errors.New("readDoc: Incorrect number of arguments. Expecting 1")
+		}
+		return t.readDoc(stub, args[0])
 	default:
 		return nil, fmt.Errorf("Invalid Invoke function name: %s",function)
 	}
