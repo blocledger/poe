@@ -1,14 +1,19 @@
-# Proof of Existence App
+# Proof of Existence App V1.0 (in development)
 
-This project demonstrates using the Hyperledger blockchain to store a document hash
-so that its existence can be later proved through transaction queries.
+This project demonstrates using the Hyperledger blockchain to store
+a document hash so that its existence can be later proved through
+transaction queries.
+
+This branch of the project is targeted toward the 1.0 version of
+Hyperledger Fabric which is still under active development.  As
+such not all of the capabilites are available or working.
 
 
 ## Installation
-
-`git clone https://github.com/blocledger/poe.git`
-
+To install the poe source and required packages
 ```
+git clone https://github.com/blocledger/poe.git
+
 npm install -g gulp
 npm install -g mocha
 npm install
@@ -20,153 +25,91 @@ bower install
 
 ## Setting up a test blockchain
 
-### Bluemix blockchain
-To get started you will need an account on Bluemix.
-
-Provision the blockchain service from the list of Application services.
-
-Open up the management panel for the blockchain service and select the "Service
-Credentials" tab and then select "View Credentials".  Copy and paste the
-credentials into a file named something similar to `cred-blockchain-ma.json`.
-
-Modify the api_url lines from `http` to `https`.
-
-Edit the following line in both api.js and util.js to match your credentials
-filename.
-```
-var cred = require('./cred-blockchain-ma.json');
-```
-Start the node server in the directory the app was installed
-in.
-
-`node api.js`
-
-Connect to the node server from a browser using `http://localhost:3000`
 
 ### Vagrant local blockchain
-Follow the instructions from the Hyperledger Fabric project to install Vagrant
-and the fabric source.  Using windows start 3 git-bash consoles in administrator
-mode.  
+Follow the instructions from the Hyperledger Fabric project to
+install Vagrant and the fabric source before continuing.  
 
-In the first console build the vagrant environment which can take some time.
+In a windows git-bash console, checkout the specified version of fabric and go to the devenv directory.
 ```
+cd $GOPATH/src/github.com/hyperledger/fabric/
+git checkout -b sprint5 af5285a4b466de0453790915c4cdce05d4050c1e
 cd $GOPATH/src/github.com/hyperledger/fabric/devenv/
-vagrant up
 ```
+Make the changes specified in the fabric-sdk-node README to the `Vagrantfile` file.  Namely add the following lines.
+```
+config.vm.network :forwarded_port, guest: 5151, host: 5151 # orderer service
+config.vm.network :forwarded_port, guest: 7056, host: 7056 # Openchain gRPC services
+config.vm.network :forwarded_port, guest: 7058, host: 7058 # GRPCCient gRPC services
+```
+Now build the vagrant environment which can take some time.
+
+`vagrant up`
+
 Once this completes login to the vagrant image.
-```
-vagrant ssh
-```
-#### Initial Installation
->  If fabric hasn't be built yet then do the following.
-  ```
-  cd /hyperledger
-  make all
-  ```
-  Delete the block chain created during the build process
-  ```
-  rm -r /var/hyperledger/production/
-  ```
-  Also delete the files under `tmp/keyValStore` in the poe source directory.
-  Note: Only delete these files the first time you run or anytime you delete the
-  `/var/hyperledger/production` directory in vagrant.
 
-Next start the member services.
-```
-cd /hyperledger/
-export MEMBERSRVC_CA_ACA_ENABLED=true
- ./build/bin/membersrvc
-```
-In the second window start a validating peer.
-```
-cd $GOPATH/src/github.com/hyperledger/fabric/devenv/
-vagrant ssh
-cd /hyperledger/
-export CORE_SECURITY_ENABLED=true
-export CORE_SECURITY_PRIVACY=true
-./build/bin/peer node start
-```
+`vagrant ssh`
 
-In the third console start the node server in the directory the app was installed
-in.
+Build the images for the Fabric's peers.
+```
+cd /hyperledger
+make images
+```
+> **Note:** If this is not a fresh install you may need to run
+  `make clean` before running `make images`.  Additionally,
+  if the fabric source has been updated recently it may be
+  necessary to remove all of the old docker containers and images
+  before doing the `make images`.
+
+### SDK setup
+In a second console window checkout the specified version of
+fabric-sdk-node and install the required packages.
+```
+git checkout -b sprint5 bb46f2c7adf2f2823d1a43f86af5442da1cf2fe9
+npm install
+```
+The SDK(hfc) needs to be installed in the poe application from the
+fabric-sdk-node source directory instead of installing hfc from
+npm repository.  In the poe source directory use the following
+command with correct path for your setup.
+
+`npm install (path to the fabric-sdk-node directory)`
+
+
+In the console window that is logged into vagrant create a
+`docker-compose.yml` file in the home directory with the contents
+from the `test/fixtures/docker-compose.yml` file from
+fabric-sdk-node.
+
+## Starting fabric and the application
+
+While logged into vagrant, create and start the containers.
+
+`docker-compose up --force-recreate`
+
+Now start the node server from the directory the
+poe application is installed in.
 
 `node api.js`
 
-At this point you can connect from a browser using http://localhost:3000
+At this point you can connect from a browser using http://localhost:3000.
 
-## Docker Fabric blockchain
+## Restarting fabric
+Use a ctrl-c to stop the containers running in the vagrant
+window.  Then to restart the previous containers and maintain
+the state of the blockchain use
 
-The blockchain can be run on your local machine using docker containers for the
-membership service and peer nodes.  The instructions below assume that you already
-have docker installed and running.
+`docker-compose up`
 
-### Pull images from DockerHub
+To rebuild the containers and start the blockchain from scratch use
 
-Pull the peer and membership services images.
-```
-docker pull hyperledger/fabric-peer
-docker pull hyperledger/fabric-membersrvc
-```
-Pull the fabric base image using the newest available tag since this repository is
-not using the latest tag.  For examples:
-```
-docker pull hyperledger/fabric-baseimage:x86_64-0.1.0
-```
-Next give the fabric-baseimage the 'latest' tag so that software can use it.  Replace 'db53d04b117c' in the following command with the image ID from your docker repository.
-```
-docker tag db53d04b117c hyperledger/fabric-baseimage:latest
-```
-Create a docker-compose.yml file with the following contents.
-```
-membersrvc:
-  image: hyperledger/fabric-membersrvc
-  ports:
-    - "7054:7054"
-  command: membersrvc
+`docker-compose up --force-recreate`
 
-vp0:
-  image: hyperledger/fabric-peer
-  ports:
-    - "7050:7050"
-    - "7051:7051"
-    - "7052:7052"
-  environment:
-    - CORE_PEER_ADDRESSAUTODETECT=true
-    - CORE_VM_ENDPOINT=unix:///var/run/docker.sock
-    - CORE_LOGGING_LEVEL=DEBUG
-    - CORE_PEER_ID=vp0
-    - CORE_SECURITY_ENROLLID=test_vp0
-    - CORE_SECURITY_ENROLLSECRET=MwYpmSRjupbT
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-  links:
-    - membersrvc
-  command: sh -c "sleep 5; peer node start"
-```
-To create the containers and start them issue the following command.
-```
-docker-compose up
-```
-To check that the containers are running
-```
-docker ps
-```
-To see what version peer you are running
-```
-docker exec -it hyperledger2_vp0_1 bash
-peer --version
-exit
-```
-To stop the containers
-```
-docker stop hyperledger2_vp0_1
-docker stop hyperledger2_membersrvc_1
-```
-To start the containers (Note: merbersrvc needs to start first)
-```
-docker start hyperledger2_membersrvc_1
-docker start hyperledger2_vp0_1
-```
+> **Note:** If you rebuild the blockchain containers then the poe
+  application's KeyValueStore directory will need to be deleted
+  before it is started.
+
+> `rm -rf (path to poe source)/tmp/* `
 
 ## Deploying chaincode with the SDK
 In order for SDK to deploy chaincode it must be in a directory
@@ -189,20 +132,47 @@ To invoke the deploy from your browser go to URL http://localhost:3000/deploy
 
 
 ## Testing
-To run both the linter and code style checker run `gulp` with no parameters.
+To run both the linter and code style checker run `gulp` with no
+parameters.
 
-To run testing that will generate transactions and exercise all of the server
-capabilities run `gulp test`.
+To run testing that will generate transactions and exercise all of
+the server capabilities run `gulp test`.
 
 ## Debugging
 Turn additional debug prints and/or GRPC tracing with
 ```
-DEBUG='hfc,poe' node api.js
+DEBUG='poe' node api.js
   or
-DEBUG='hfc,poe' GRPC_TRACE=all node api.js
+DEBUG='poe' GRPC_TRACE=all node api.js
 ```
+
+## Docker Commands
+
+To check that the containers are running
+```
+docker ps
+```
+To see what version peer you are running
+```
+docker exec -it hyperledger2_vp0_1 bash
+peer --version
+exit
+```
+To display the container's log
+```
+docker logs --tail 30 hyperledger2_vp0_1
+```
+To stop containers
+```
+docker stop hyperledger2_vp0_1
+```
+To start the containers
+```
+docker start hyperledger2_vp0_1
+```
+
 ## Acknowledgement
-This project was based on the IBM Marbles example and the Hyperledger
+This project was based on examples and documentation found in the Hyperledger
  [fabric](https://github.com/hyperledger/fabric) project.
 
 
