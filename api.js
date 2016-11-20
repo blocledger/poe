@@ -55,6 +55,9 @@ var proposedChaincodeID;
 // Confidentiality setting
 var confidentialSetting = false;
 
+// This is probably a temp setting to override the default key size of 384
+hfc.setConfigSetting('crypto-keysize', 256);
+
 // Create a client chain.
 // The name can be anything as it is only used internally.
 var chain = hfc.newChain('targetChain');
@@ -75,8 +78,10 @@ var store = chain.getKeyValueStore();
 store.getValue('chaincodeID')
 .then(
   function(value) {
-    chaincodeID = value.trim();
-    debug('chaincodeID = ' + chaincodeID);
+    if (value) {
+      chaincodeID = value.trim();
+      debug('chaincodeID = ' + chaincodeID);
+    }
   }, function(err) {
     console.log('error getting chaincodeID ' + err);
   }
@@ -167,8 +172,9 @@ app.get('/', function(req, res) {
 app.get('/deploy', function(req, res) {
   // Construct the deploy request
   var deployRequest = {
-    target: peer,
+    targets: peer,
     chaincodePath: chaincodePath,
+    chaincodeId: 'poe_chaincode',
     fcn: 'init',
     args: [],
     //confidential: confidentialSetting,
@@ -188,33 +194,34 @@ app.get('/deploy', function(req, res) {
     function(results) {
       debug('received proposal results');
       console.log(results);
-      var proposalResponse = results[0];
+      var proposalResponses = results[0];
       var proposal = results[1];
-      if (proposalResponse &&
-        proposalResponse.response &&
-        proposalResponse.response.status === 200) {
+      if (proposalResponses &&
+        proposalResponses[0].response &&
+        proposalResponses[0].response.status === 200) {
         console.log('Successfully sent Proposal and received ' +
         'ProposalResponse: Status - %s, message - "%s", metadata - "%s", ' +
-        'endorsement signature: %s', proposalResponse.response.status,
-        proposalResponse.response.message, proposalResponse.response.payload,
-        proposalResponse.endorsement.signature);
-        proposedChaincodeID = proposalResponse.chaincodeId;
-        return userMember1.sendTransaction(proposalResponse, proposal);
+        'endorsement signature: %s', proposalResponses[0].response.status,
+        proposalResponses[0].response.message, proposalResponses[0].response.payload,
+        proposalResponses[0].endorsement.signature);
+        debug(proposalResponses[0]);
+        proposedChaincodeID = proposalResponses[0].chaincodeId;
+        return userMember1.sendTransaction(proposalResponses, proposal);
       } else {
         console.log('sendDeploymentProposal failed');
-        console.log(proposalResponse);
-        console.log(proposalResponse.response);
-        console.log(proposalResponse.response.status);
+        console.log(proposalResponses);
+        console.log(proposalResponses[0].response);
+        console.log(proposalResponses[0].response.status);
         return res.status(500).send('Deploy proposal failed. ');
       }
     },
     function(err) {
       // Deploy proposal failed
       console.log('Error getting deploy proposol for the chaincode ' + err);
-      debug('Failed to get the chaincode deploy proposal: request/error %j ',
+      debug('Failed to get the chaincode deploy proposal: request/error ' +
             err);
       debug(err);
-      res.json(err);
+      return res.json(err);
     }
   ).catch(
     function(err) {
@@ -263,7 +270,18 @@ app.get('/member', function(req, res) {
 // Add support for the Applicaion specific REST calls
 // addDoc, listDoc, transferDoc, verifyDoc, and delDoc
 
-// invoke function
+/* invoke function
+This function will send a transaction proposal which will return an array of
+either Errors or proposal responses.  For now we will use an endorsement policy
+that requires all of the proposols to return without error before sending
+the transaction request.  The SDK used promise-settled to send the proposols
+to all of the peers and receive the results but then it pulls the values and Errors
+out of the return from settled and puts them into an array.  This function needs
+to go through the array and look for any errors.  It one is found it should
+throw an Error that can be caught at the end of the function and returned to
+the browser.
+
+*/
 function invoke(user, invokeRequest, res) {
   // check to see if the user is enrolled
   var result = util.checkUser(user);
@@ -275,25 +293,40 @@ function invoke(user, invokeRequest, res) {
   .then(function(results) {
     debug('received proposal results');
     console.log(results);
-    var proposalResponse = results[0];
+    var proposalResponses = results[0];
     var proposal = results[1];
-    if (proposalResponse &&
-      proposalResponse.response &&
-      proposalResponse.response.status === 200) {
-      console.log('Successfully sent Proposal and received ProposalResponse: ' +
-                   'Status - %s, message - "%s", metadata - "%j", ' +
-                   'endorsement signature: %s',
-                   proposalResponse.response.status,
-                   proposalResponse.response.message,
-                   proposalResponse.response.payload,
-                   proposalResponse.endorsement.signature);
-      return user.sendTransaction(proposalResponse, proposal);
+    var goodProposals = 0;
+    proposalResponses.forEach(function(proposalResponse) {
+      if (proposalResponse &&
+        proposalResponse.response &&
+        proposalResponse.response.status === 200) {
+          goodProposals++;
+          console.log('Successfully sent Proposal and received ' +
+                     'ProposalResponse: Status - %s, message - "%s", ' +
+                     'metadata - "%j", endorsement signature: %s',
+                     proposalResponse.response.status,
+                     proposalResponse.response.message,
+                     proposalResponse.response.payload,
+                     proposalResponse.endorsement.signature);
+      } else {
+        console.log('sendTransactionProposal failed');
+        debug(proposalResponse);
+        if (proposalResponse instanceof Error) {
+          console.log('Proposal error message: ' + proposalResponse.message);
+        } else {
+          console.log('Proposal failed and returned status ' +
+                    (proposalResponse.response.status ?
+                      proposalResponse.response.status : 'other than 200'));
+        }
+      }
+    })
+    if (goodProposals == proposalResponses.length) {
+      return user.sendTransaction(proposalResponses, proposal);
     } else {
-      console.log('sendTransactionProposal failed');
-      console.log(proposalResponse);
-      throw new Error('Proposal failed and returned status ' +
-                (proposalResponse.response.status ?
-                  proposalResponse.response.status : 'other than 200'));
+      console.log('%d out of %d of the Endorsing peers approved the ' +
+                  'transaction proposal.',
+                  goodProposals, proposalResponses.length);
+      throw new Error('The endorsement policy was not met. ')
     }
   }).then(function(response) {
     return res.json(response);
@@ -353,7 +386,7 @@ app.post('/addDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    target: peer,
+    targets: peer,
     chaincodeId: chaincodeID,
     fcn: 'addDoc',
     args: [hash, JSON.stringify(params)],
@@ -367,7 +400,7 @@ app.post('/addDoc', function(req, res) {
 app.get('/verifyDoc/:hash', function(req, res) {
   debug('received /verifyDoc with hash = %s', req.params.hash);
   var queryRequest = {
-    target: peer,
+    targets: peer,
     chaincodeId: chaincodeID,
     fcn: 'readDoc',
     args: [req.params.hash]
@@ -381,7 +414,7 @@ app.get('/verifyDoc/:hash', function(req, res) {
 app.get('/listDoc', function(req, res) {
   debug('received /listDoc');
   var queryRequest = {
-    target: peer,
+    targets: peer,
     chaincodeId: chaincodeID,
     fcn: 'listDoc',
     args: []
@@ -399,7 +432,7 @@ app.post('/delDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    target: peer,
+    targets: peer,
     chaincodeId: chaincodeID,
     fcn: 'delDoc',
     args: [hash],
@@ -415,7 +448,7 @@ app.post('/editDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    target: peer,
+    targets: peer,
     chaincodeId: chaincodeID,
     fcn: 'transferDoc',
     args: [req.body.hash, req.body.owner],

@@ -20,7 +20,7 @@ var ProtoBuf = require('protobufjs');
 // needed proto files
 //    chaincode.proto - chaincodeID
 var builder = ProtoBuf.loadProtoFile(
-              './node_modules/hfc/lib/protos/chaincode.proto');    // Creates the Builder
+              './node_modules/hfc/lib/protos/peer/chaincode.proto');    // Creates the Builder
 // jscs:disable maximumLineLength
 // var builder = ProtoBuf.loadProtoFile('C:/Users/Eric/Documents/Projects/BlockChain/go/src/github.com/hyperledger/fabric/sdk/node/lib/protos/fabric.proto');
 // jscs:enable maximumLineLength
@@ -168,8 +168,10 @@ var updateChain = function(height) {
     return response.entity.height;
   }, function(response) {
     //console.log(response);
-    console.log('Error path: failed getting the chain_stats for updateChain:',
-                response.status.code, response.entity.Error);
+    if (response && response.error) {
+      console.log('Error: failed getting the chain_stats for updateChain: ' +
+                  response.error);
+    }
   });
 };
 
