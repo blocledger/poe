@@ -168,17 +168,26 @@ app.get('/', function(req, res) {
   res.sendfile('./public/menu.html');
 });
 
+app.get('/member', function(req, res) {
+  // check to see if the user is enrolled
+  var result = util.checkUser(userMember1);
+  if (result.err !== 0) {
+    console.log(result.msg);
+    return res.status(500).send(result.msg);
+  }
+  console.log(result.msg);
+  res.send(result.msg);
+});
+
 // provide an endpoint that will deploy the chaincode
 app.get('/deploy', function(req, res) {
   // Construct the deploy request
   var deployRequest = {
     targets: peer,
     chaincodePath: chaincodePath,
-    chaincodeId: 'poe_chaincode',
+    chaincodeId: 'poe_chaincode2',
     fcn: 'init',
     args: [],
-    //confidential: confidentialSetting,
-    //certificatePath: '/certs/blockchain-cert.pem'  //added for bluemix
   };
   debug('Deployment request %j ', deployRequest);
 
@@ -196,44 +205,21 @@ app.get('/deploy', function(req, res) {
       console.log(results);
       var proposalResponses = results[0];
       var proposal = results[1];
-      if (proposalResponses &&
-        proposalResponses[0].response &&
-        proposalResponses[0].response.status === 200) {
-        console.log('Successfully sent Proposal and received ' +
-        'ProposalResponse: Status - %s, message - "%s", metadata - "%s", ' +
-        'endorsement signature: %s', proposalResponses[0].response.status,
-        proposalResponses[0].response.message, proposalResponses[0].response.payload,
-        proposalResponses[0].endorsement.signature);
-        debug(proposalResponses[0]);
-        proposedChaincodeID = proposalResponses[0].chaincodeId;
+      var goodProposals = handleProposalResponses(proposalResponses);
+      if (goodProposals == proposalResponses.length) {
         return userMember1.sendTransaction(proposalResponses, proposal);
       } else {
-        console.log('sendDeploymentProposal failed');
-        console.log(proposalResponses);
-        console.log(proposalResponses[0].response);
-        console.log(proposalResponses[0].response.status);
-        return res.status(500).send('Deploy proposal failed. ');
+        console.log('%d out of %d of the Endorsing peers approved the ' +
+                    'deploy proposal.',
+                    goodProposals, proposalResponses.length);
+        throw new Error('The endorsement policy was not met. ');
       }
-    },
-    function(err) {
-      // Deploy proposal failed
-      console.log('Error getting deploy proposol for the chaincode ' + err);
-      debug('Failed to get the chaincode deploy proposal: request/error ' +
-            err);
-      debug(err);
-      return res.json(err);
-    }
-  ).catch(
-    function(err) {
-      console.log('Depoly failed');
-      console.log(err);
-      return res.status(500).send('Deploy failed. ' + err);
     }
   ).then(
     function(response) {
       if (response.Status == 'SUCCESS') {
         console.log(response);
-        chaincodeID = proposedChaincodeID;
+        chaincodeID = deployRequest.chaincodeId;
         store.setValue('chaincodeID', chaincodeID)
         .then(function(response) {
           debug('setValue response from storing chaincodeID is ' + response);
@@ -243,32 +229,50 @@ app.get('/deploy', function(req, res) {
           }
         })
         .catch(function(err) {
-          console.log(err);
+          console.log('error saving chaincodeid. ' + err);
         });
       }
       res.json(response);  //return response reguardless of success or not
-    },
+    }
+  ).catch(
     function(err) {
       console.log('Error sending the deploy transaction');
+      console.log(err);
       return res.status(500).send('Deploy transaction failed. ' + err);
     }
   );
-
 });
 
-app.get('/member', function(req, res) {
-  // check to see if the user is enrolled
-  var result = util.checkUser(userMember1);
-  if (result.err !== 0) {
-    console.log(result.msg);
-    return res.status(500).send(result.msg);
-  }
-  console.log(result.msg);
-  res.send(result.msg);
-});
-
-// Add support for the Applicaion specific REST calls
-// addDoc, listDoc, transferDoc, verifyDoc, and delDoc
+// This function processes the proposal responses for invokes and deployRequest
+// returns the number of good proposals
+function handleProposalResponses(proposalResponses) {
+  var goodProposals = 0;
+  proposalResponses.forEach(function(proposalResponse) {
+    if (proposalResponse &&
+      proposalResponse.response &&
+      proposalResponse.response.status === 200) {
+      goodProposals++;
+      console.log('Successfully sent Proposal and received ' +
+                 'ProposalResponse: Status - %s, message - "%s", ' +
+                 'metadata - "%j", endorsement signature: %s',
+                 proposalResponse.response.status,
+                 proposalResponse.response.message,
+                 proposalResponse.response.payload,
+                 proposalResponse.endorsement.signature);
+    } else {
+      console.log('Send Proposal failed');
+      debug(proposalResponse);
+      if (proposalResponse instanceof Error) {
+        console.log('Proposal error message: ' + proposalResponse.message);
+      } else {
+        console.log('Proposal failed and returned status ' +
+                  (proposalResponse.response.status ?
+                    proposalResponse.response.status : 'other than 200'));
+      }
+    }
+  });
+  return goodProposals;
+}
 
 /* invoke function
 This function will send a transaction proposal which will return an array of
@@ -295,38 +299,14 @@ function invoke(user, invokeRequest, res) {
     console.log(results);
     var proposalResponses = results[0];
     var proposal = results[1];
-    var goodProposals = 0;
-    proposalResponses.forEach(function(proposalResponse) {
-      if (proposalResponse &&
-        proposalResponse.response &&
-        proposalResponse.response.status === 200) {
-          goodProposals++;
-          console.log('Successfully sent Proposal and received ' +
-                     'ProposalResponse: Status - %s, message - "%s", ' +
-                     'metadata - "%j", endorsement signature: %s',
-                     proposalResponse.response.status,
-                     proposalResponse.response.message,
-                     proposalResponse.response.payload,
-                     proposalResponse.endorsement.signature);
-      } else {
-        console.log('sendTransactionProposal failed');
-        debug(proposalResponse);
-        if (proposalResponse instanceof Error) {
-          console.log('Proposal error message: ' + proposalResponse.message);
-        } else {
-          console.log('Proposal failed and returned status ' +
-                    (proposalResponse.response.status ?
-                      proposalResponse.response.status : 'other than 200'));
-        }
-      }
-    })
+    var goodProposals = handleProposalResponses(proposalResponses);
     if (goodProposals == proposalResponses.length) {
       return user.sendTransaction(proposalResponses, proposal);
     } else {
       console.log('%d out of %d of the Endorsing peers approved the ' +
                   'transaction proposal.',
                   goodProposals, proposalResponses.length);
-      throw new Error('The endorsement policy was not met. ')
+      throw new Error('The endorsement policy was not met. ');
     }
   }).then(function(response) {
     return res.json(response);
@@ -362,6 +342,9 @@ function query(user, queryRequest, res) {
     return res.status(500).send(err.toString());
   });
 }
+
+// Add support for the Applicaion specific REST calls
+// addDoc, listDoc, transferDoc, verifyDoc, and delDoc
 
 // addDoc  Add a new document to the block chain
 app.post('/addDoc', function(req, res) {
