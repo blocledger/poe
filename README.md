@@ -113,9 +113,8 @@ To rebuild the containers and start the blockchain from scratch use
 
 ## Deploying chaincode with the SDK
 In order for SDK to deploy chaincode it must be in a directory
-under $GOPATH/src/github.com/.  You also need to copy files from fabric tree into
-a vendor sub-directory along with the chaincode.  Once this directory is prepared
-set the chaincode path in the application to match and call the deploy.
+under $GOPATH/src/github.com/.  Set the chaincode path in the
+application to match this directory and run the deploy.
 
 ```
 cd $GOPATH/src/github.com/
@@ -123,9 +122,6 @@ mkdir chaincode
 cd chaincode
 cp (path to poe source)/poe/chaincode/poe_chaincode.go .
 mkdir -p vendor/github.com/hyperledger
-cd vendor/github.com/hyperledger
-cp -r $GOPATH/src/github.com/hyperledger/fabric .
-cp -r fabric/vendor/github.com/op ..
 ```
 
 To invoke the deploy from your browser go to URL http://localhost:3000/deploy
