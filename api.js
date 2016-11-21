@@ -104,12 +104,13 @@ chain.setMemberServicesUrl(grpc + cred.ca.url);
 // set orderer
 chain.setOrderer(grpc + cred.orderer.url);
 
-// Get a peer object
-var peerUrl = grpc +
-              cred.peers[0].discovery_host + ':' +
-              cred.peers[0].discovery_port;
-var peer = hfc.getPeer(peerUrl);
-debug(peerUrl);
+// Build the array of peers
+var peers = [];
+cred.peers.forEach(function(peer) {
+  var peerUrl = grpc + peer.discovery_host + ':' + peer.discovery_port;
+  peers.push(hfc.getPeer(peerUrl));
+});
+debug(peers);
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
 
 // search the user list for WebAppAdmin and return the password
@@ -183,9 +184,9 @@ app.get('/member', function(req, res) {
 app.get('/deploy', function(req, res) {
   // Construct the deploy request
   var deployRequest = {
-    targets: peer,
+    targets: peers,
     chaincodePath: chaincodePath,
-    chaincodeId: 'poe_chaincode2',
+    chaincodeId: 'poe_chaincode4',
     fcn: 'init',
     args: [],
   };
@@ -369,7 +370,7 @@ app.post('/addDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    targets: peer,
+    targets: peers,
     chaincodeId: chaincodeID,
     fcn: 'addDoc',
     args: [hash, JSON.stringify(params)],
@@ -383,7 +384,7 @@ app.post('/addDoc', function(req, res) {
 app.get('/verifyDoc/:hash', function(req, res) {
   debug('received /verifyDoc with hash = %s', req.params.hash);
   var queryRequest = {
-    targets: peer,
+    targets: peers[0],   //just query the first peer for now
     chaincodeId: chaincodeID,
     fcn: 'readDoc',
     args: [req.params.hash]
@@ -397,7 +398,7 @@ app.get('/verifyDoc/:hash', function(req, res) {
 app.get('/listDoc', function(req, res) {
   debug('received /listDoc');
   var queryRequest = {
-    targets: peer,
+    targets: peers[0], //just query the first peer for now
     chaincodeId: chaincodeID,
     fcn: 'listDoc',
     args: []
@@ -415,7 +416,7 @@ app.post('/delDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    targets: peer,
+    targets: peers,
     chaincodeId: chaincodeID,
     fcn: 'delDoc',
     args: [hash],
@@ -431,7 +432,7 @@ app.post('/editDoc', function(req, res) {
   var hash = req.body.hash;
 
   var invokeRequest = {
-    targets: peer,
+    targets: peers,
     chaincodeId: chaincodeID,
     fcn: 'transferDoc',
     args: [req.body.hash, req.body.owner],

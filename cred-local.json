@@ -9,6 +9,16 @@
       "type": "peer",
       "id": "localhost",
       "api_url": "http://localhost:7050"
+    },
+    {
+      "discovery_host": "localhost",
+      "discovery_port": 7056,
+      "api_host": "localhost",
+      "api_port_tls": 443,
+      "api_port": 7056,
+      "type": "peer",
+      "id": "localhost",
+      "api_url": "http://localhost:7050"
     }
   ],
   "ca": {
