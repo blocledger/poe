@@ -19,12 +19,13 @@ var util = require('util');
 var ProtoBuf = require('protobufjs');
 // needed proto files
 //    chaincode.proto - chaincodeID
-var builder = ProtoBuf.loadProtoFile(
-              './node_modules/hfc/lib/protos/peer/chaincode.proto');    // Creates the Builder
-// jscs:disable maximumLineLength
-// var builder = ProtoBuf.loadProtoFile('C:/Users/Eric/Documents/Projects/BlockChain/go/src/github.com/hyperledger/fabric/sdk/node/lib/protos/fabric.proto');
-// jscs:enable maximumLineLength
-var PROTOS = builder.build('protos');                            // Returns just the 'js' namespace if that's all we need
+var builder = ProtoBuf.loadProtoFile('./protos/common/common.proto');    // Creates the Builder
+ProtoBuf.loadProtoFile('./protos/peer/fabric_transaction.proto', builder);    // Add a second proto file to the Builder
+ProtoBuf.loadProtoFile('./protos/peer/chaincode_proposal.proto', builder);
+ProtoBuf.loadProtoFile('./protos/peer/chaincode_transaction.proto', builder);
+
+var COMMON = builder.build('common');                            // Returns just the 'js' namespace if that's all we need
+var PROTOS = builder.build('protos');
 var rest = require('rest');
 var mime = require('rest/interceptor/mime');
 var errorCode = require('rest/interceptor/errorCode');
@@ -141,7 +142,7 @@ var decodeType = function(transaction) {
   return transaction.type;
 };
 
-var decodeBlock = function(block) {
+var decodeBlockOld = function(block) {
   var newBlock = block;
   if (!block.transactions) {
     return block;
@@ -158,6 +159,77 @@ var decodeBlock = function(block) {
   }
   return newBlock;
 };
+
+//jscs:disable maximumLineLength
+var decodeBlock = function(response) {
+  console.log('============  Start decoding buffer =================');
+  var block = response.Block.Data.Data[0];
+  console.log(block);
+  var newBlock = response.Block;
+  newBlock.Header.PreviousHash = response.Block.Header.PreviousHash.toString('hex');
+  newBlock.Header.DataHash = response.Block.Header.DataHash.toString('hex');
+  var payload = newBlock.Data.Data[0].payload;
+  console.log(payload);
+  if (payload.header.chainHeader.type != 3) {
+    return newBlock;
+  }
+
+  var transaction = PROTOS.Transaction2.decode(payload.data);
+  console.log(transaction);
+  console.log(transaction.actions[0].payload.chaincodeProposalPayload);
+
+  newBlock.Data.Data[0].payload.data = transaction;
+
+  console.log('============  Stop decoding transactions =================');
+  return newBlock;
+};
+
+var decodeBlockTemp = function(response) {
+  var block = COMMON.Envelope.decode(response.Block.Data.Data[0]);
+  console.log(block);
+  var newBlock = response.Block;
+  newBlock.Data.Data[0] = block;
+  console.log('============  Start decoding buffer =================');
+  console.log(response.Block.Header.PreviousHash);
+  console.log('PreviousHash is a Buffer: ' + Buffer.isBuffer(response.Block.Header.PreviousHash));
+  newBlock.Header.PreviousHash = response.Block.Header.PreviousHash.toString('hex');
+  newBlock.Header.DataHash = response.Block.Header.DataHash.toString('hex');
+  console.log(newBlock.Header.PreviousHash);
+  console.log('=============  Data  =============');
+  console.log(newBlock.Data.Data);
+  var payload = COMMON.Payload.decode(newBlock.Data.Data[0].payload);
+  console.log(payload);
+  newBlock.Data.Data[0].payload = payload;
+  //  skip decoding the rest if it is a configuration transaction
+  if (payload.header.chainHeader.type != 3) {
+    return newBlock;
+  }
+  newBlock.Data.Data[0].payload.header.chainHeader.chainID = payload.header.chainHeader.chainID.toBuffer().toString();
+  console.log(newBlock.Data.Data[0].payload.header.chainHeader);
+  console.log('--------');
+  console.log(payload.data.toBuffer());
+  console.log('============  Stop decoding buffer =================');
+  var transaction = PROTOS.Transaction2.decode(payload.data);
+  console.log(transaction);
+  console.log(transaction.actions[0].header.toBuffer());
+  console.log(transaction.actions[0].payload.toBuffer());
+  transaction.actions[0].payload = PROTOS.ChaincodeActionPayload.decode(transaction.actions[0].payload);
+  console.log(transaction.actions[0].payload);
+  console.log(transaction.actions[0].payload.chaincodeProposalPayload.toBuffer());
+  transaction.actions[0].payload.chaincodeProposalPayload = PROTOS.ChaincodeProposalPayload.decode(transaction.actions[0].payload.chaincodeProposalPayload);
+  transaction.actions[0].payload.chaincodeProposalPayload.Input = PROTOS.ChaincodeInvocationSpec.decode(transaction.actions[0].payload.chaincodeProposalPayload.Input);
+  console.log(transaction.actions[0].payload.chaincodeProposalPayload.Input.chaincodeSpec);
+  var args = transaction.actions[0].payload.chaincodeProposalPayload.Input.chaincodeSpec.ctorMsg.args;
+  for (var i = 0; i < args.length; i++) {
+    args[i] = args[i].toBuffer().toString();
+  }
+  transaction.actions[0].payload.chaincodeProposalPayload.Input.chaincodeSpec.ctorMsg.args = args;
+
+  newBlock.Data.Data[0].payload.data = transaction;
+  console.log('============  Stop decoding transactions =================');
+  return newBlock;
+};
+//jscs:enable maximumLineLength
 
 var updateChain = function(height) {
   // debug('Calling the REST endpoint GET /chain/');

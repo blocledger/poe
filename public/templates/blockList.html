@@ -4,19 +4,15 @@
     <thead>
       <tr>
         <th>#</th>
-        <th>Ledger Commit Time</th>
-        <th>Transactions</th>
-        <th>State Hash</th>
+        <th>Data Hash</th>
         <th>Previous Block Hash </th>
       </tr>
     </thead>
     <tbody>
       <tr ng-repeat="block in blockList">
-        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{block.id}}</a>
-        <td>{{block.block.nonHashData.localLedgerCommitTimestamp.seconds * 1000 + block.block.nonHashData.localLedgerCommitTimestamp.nanos / 1000000 | date:'medium'}}</td>
-        <td>{{block.block.transactions.length}}</td>
-        <td>{{block.block.stateHash | limitTo:30}}</td>
-        <td>{{block.block.previousBlockHash | limitTo:30}}</td>
+        <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{block.Header.Number}}</a>
+        <td>{{block.Header.DataHash | limitTo:30}}</td>
+        <td>{{block.Header.PreviousHash | limitTo:30}}</td>
       </tr>
     </tbody>
   </table>

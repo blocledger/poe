@@ -10,6 +10,8 @@ such not all of the capabilites are available or working.
 
 
 ## Installation
+Install the latest Node.js version 6.x.x from https://nodejs.org/en/.
+
 To install the poe source and required packages
 ```
 git clone https://github.com/blocledger/poe.git
@@ -22,6 +24,8 @@ npm install -g bower
 bower install
 ```
 
+Install both the Hyperledger fabric and fabric-sdk-node repositories from
+https://gerrit.hyperledger.org/
 
 ## Setting up a test blockchain
 
@@ -112,7 +116,7 @@ To rebuild the containers and start the blockchain from scratch use
 > `rm -rf (path to poe source)/tmp/* `
 
 ## Deploying chaincode with the SDK
-In order for SDK to deploy chaincode it must be in a directory
+In order for SDK to deploy chaincode it must be in a directory by itself
 under $GOPATH/src/github.com/.  Set the chaincode path in the
 application to match this directory and run the deploy.
 
@@ -121,7 +125,6 @@ cd $GOPATH/src/github.com/
 mkdir chaincode
 cd chaincode
 cp (path to poe source)/poe/chaincode/poe_chaincode.go .
-mkdir -p vendor/github.com/hyperledger
 ```
 
 To invoke the deploy from your browser go to URL http://localhost:3000/deploy

@@ -33,6 +33,13 @@ var restClient = rest.wrap(mime).wrap(errorCode, {code: 400});
 var  chainHeight = 1;
 var blockList = [];
 
+var grpc = require('grpc');
+var insecure = grpc.credentials.createInsecure();
+console.log(insecure);
+
+var abProto = grpc.load(__dirname + '/protos/orderer/ab.proto').orderer;
+var commonProto = grpc.load(__dirname + '/protos/common/common.proto').common;
+
 // Configure test users
 // Set the values required to register a user with the certificate authority.
 user1 = {
@@ -442,58 +449,81 @@ app.post('/editDoc', function(req, res) {
   invoke(userMember1, invokeRequest, res);
 });
 
-//initialize the block list
-var startUpdates = false;
-util.updateChain(chainHeight).then(function(height) {
-  debug('The initial block chain height is ' + height);
-  util.initialBlockList(height).then(function(values) {
-    debug('Initializing the block list with a length of ' + values.length);
-    blockList = values;
-    startUpdates = true;
-  }, function(response) {
-    console.log(response);
-  }).done();
-  chainHeight = height;
-  debug('The initial chainHeight is set to ' + chainHeight);
-}, function(response) {
+//try using the Deliver gRPC method to get the blocks....
+console.log('creating abClient');
+var abClient = new abProto.AtomicBroadcast('localhost:5151', insecure);
+console.log('creating deliver');
+var deliver = abClient.deliver();
+
+deliver.on('data', function(response) {
+  debug('received a new block');
+  debug(response);
+  //save the block and send the acknowledge...
+  if (response && response.Type == 'Block') {
+    var blockNum = response.Block.Header.Number;
+    var block = util.decodeBlock(response);
+    console.log(block);
+    blockList.push(block);
+    //Array.prototype.push.apply(blockList, response.Block);  //adds the new blocks to the end of the block list
+    chainHeight = blockNum + 1;
+    console.log('acknowledge block number ' + blockNum);
+    deliver.write({Acknowledgement: {Number: blockNum}});
+  } else {
+    console.log(response.Error);
+  }
+});
+deliver.on('error', function(err) {
+  console.log(err);
+});
+deliver.on('end', function(response) {
   console.log(response);
-  console.log('Error updating the chain height ' + response.error);
 });
 
-// periodically fetch the currnet block height
-setInterval(function() {
-  // var blockListUpdateEvents = eventHub.registerBlockEvent(function(event) {
-  if (startUpdates === true) {
-    util.updateChain(chainHeight).then(function(height) {
-      // debug('Block chain height is ' + height);
-      var last = 0;
-      if (blockList.length > 0) {
-        last = blockList[blockList.length - 1].id;
-      }
-      // debug('The end of the block list is ' + last);
-      if (height > last + 1) {
-        util.buildBlockList(last + 1, height).then(function(values) {
-          debug('There are additional blocks of length ' + values.length);
-          Array.prototype.push.apply(blockList, values);  //adds the new blocks to the end of the block list
-        }, function(response) {
-          console.log(response);
-        });
-      }
-      chainHeight = height;
-      // debug('The new chain height is ' + chainHeight);
-    }, function(response) {
-      //console.log(response);
-      console.log('Error updating the chain height ' + response.error);
-    }).catch(function(err) {
-      console.log('The updateChain function has failed.');
-      console.log(err);
-    });
-  }
-  // });
-}, 600000);
+var deliverUpdate = {Seek: {Start: 'OLDEST', WindowSize: 2}};
+
+deliver.write(deliverUpdate);
 
 app.get('/chain', function(req, res) {
-  // debug('Display chain stats');
+  debug('Display chain stats');
+
+  // //var insecure = grpc.credentials.createInsecure();
+  // debug('create grpcClient');
+  // var grpcClient = new apiProto.Openchain('localhost:7051', insecure);
+  // debug('grpcClient created');
+  // // console.log(grpcClient);
+  // debug('calling getBlockchainInfo');
+  // try {
+  //   grpcClient.getBlockchainInfo(empty, function(err, response) {
+  //     console.log('====================>  gRPC callback  <=======================');
+  //     if (err) {
+  //       console.log(err);
+  //     }
+  //     if (response) {
+  //       console.log(response);
+  //     }
+  //   });
+  // } catch (e) {
+  //   console.log(e);
+  // } finally {
+  //   debug('finished the getBlockchainInfo grpc call');
+  // }
+  // //  Lets try some dummy code just to see if the grpc call is going to work
+  // try {
+  //   grpcClient.getBlockByNumber(4, function(err, response) {
+  //     console.log('====================>  gRPC callback  <=======================');
+  //     if (err) {
+  //       console.log(err);
+  //     }
+  //     if (response) {
+  //       console.log(response);
+  //     }
+  //   });
+  // } catch (e) {
+  //   console.log(e);
+  // } finally {
+  //   debug('finished the GetBlockByNumber grpc call');
+  // }
+
   restClient(restUrl + '/chain/')
   .then(function(response) {
     // debug(response.entity);
@@ -508,48 +538,9 @@ app.get('/chain', function(req, res) {
   });
 });
 
-app.get('/chain/blocks/:id', function(req, res) {
-  console.log('Get a block by ID: ' + req.params.id);
-  restClient(restUrl + '/chain/blocks/' + req.params.id)
-  .then(function(response) {
-    // debug(response.entity);
-    var block = util.decodeBlock(response.entity);
-    if (block) {
-      res.json(block);
-    } else {
-      res.json(response.entity);
-    }
-  }, function(response) {
-    //console.log(response);
-    console.log('Error path: There was an error getting the block_stats:',
-                response.status.code, response.entity.Error);
-    res.send('Error path: There was an error getting the block stats.  ' +
-              response.entity.Error);
-  });
-});
-
-//provide payload details for block with id specified
-app.get('/payload/:id', function(req, res) {
-  restClient(restUrl + '/chain/blocks/' + req.params.id)
-  .then(function(response) {
-    if (response.status.code != 200) {
-      console.log('There was an error getting the block_stats:',
-                  response.status.code);
-      res.send('There was an error getting the block stats.  ' +
-                response.entity.Error);
-    } else {
-      debug(response.entity);
-      payload = util.decodePayload(response.entity.transactions[0]);
-      console.log(payload.chaincodeSpec.ctorMsg);
-      res.json(payload);
-    }
-  }, function(response) {
-    //console.log(response);
-    console.log('Error path: There was an error getting the block_stats:',
-                response.status.code, response.entity.Error);
-    res.send('Error path: There was an error getting the block stats.  ' +
-                response.entity.Error);
-  });
+app.get('/blockCount', function(req, res) {
+  // debug('get blockCount ', blockList.length);
+  res.send(String(blockList.length));
 });
 
 app.get('/chain/blockList/:id', function(req, res) {
@@ -566,21 +557,28 @@ app.get('/chain/transactionList/:id', function(req, res) {
   var list = [];
   var count = 0;
   var len = blockList.length;
-  var findUUID = function(r) {
-    return r.txid === transaction.txid;
-  };
   for (var i = 0; i < len && count < req.params.id; i++) {
-    var block = blockList[i].block;
-    if (!block.transactions) {  // skip blocks with no transactions
+    var block = blockList[i];
+    if (block.Data.Data.length === 0) {  // skip blocks with no transactions
       continue;
     }
-    var transLen = block.transactions.length;
-    for (var j = 0; j < transLen; j++) {
-      var transaction = block.transactions[j];
-      // var result = block.nonHashData.transactionResults.find(findUUID);
-      var result = 'TBD';   //TODO figure out the results of the new format
-      list.push({transaction: transaction, result: result});
-      count++;
+    var blocks = block.Data.Data;
+    for (var j = 0; j < blocks.length; j++) {
+      console.log(blocks[j]);
+      if (blocks[j].payload.header.chainHeader.type != 3) {
+        continue;
+      }
+      if (blocks[j].payload.data.actions.length === 0) {
+        continue;
+      }
+
+      console.log(blocks[j].payload.data.actions);
+      for (var k = 0; k < blocks[j].payload.data.actions.length; k++) {
+        var transaction = blocks[j].payload.data.actions[k]
+                          .payload.chaincodeProposalPayload.Input;
+        list.push(transaction);
+        count++;
+      }
     }
   }
   if (list.length > req.params.id) {

@@ -54,6 +54,8 @@
       <button type="submit" class="btn btn-primary btn-lg" ng-disabled="verifyDocForm.$invalid"
       uib-tooltip="Click to verify a document" tooltip-placement="right">
         <span class="glyphicon glyphicon-ok"></span> Verify Doc</button>
+        <button class="btn btn-info btn-lg" ng-click="edit(hash, owner)">Edit</button>
+        <button class="btn btn-danger btn-lg" ng-click="delete(hash)">Delete</button>
     </div>
   </div>
 </form>

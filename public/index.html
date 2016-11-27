@@ -39,7 +39,7 @@
             <span class="icon-bar"></span>
           </button>
           <a class="navbar-brand" href="http://www.blocledger.com">BlocLedger</a>
-          <div class="navbar-text" ng-controller="heightCtrl">Block Count: &nbsp; {{height-1}}</div>
+          <div class="navbar-text" ng-controller="heightCtrl">Block Count: &nbsp; {{height}}</div>
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav navbar-right">
@@ -54,7 +54,6 @@
             <li class="dropdown">
             <a class="dropdown-toggle" data-toggle="dropdown">Hyperledger Fabric <span class="caret"></span></a>
               <ul class="dropdown-menu">
-                <li><a href="#!/chainStats">Chain Stats</a></li>
                 <li><a href="#!/blockList">Block List</a></li>
                 <li><a href="#!/transactionList">Transactoin List</a></li>
               </ul>
@@ -75,8 +74,7 @@
           </ul>
           <ul class="nav nav-sidebar">
             <li><h3> Hyperledger Fabric </h3></li>
-            <li ng-controller="heightCtrl">&nbsp; Block Count: &nbsp; {{height-1}}</li>
-            <li><a href="#!/chainStats">Chain Stats</a></li>
+            <li ng-controller="heightCtrl">&nbsp; Block Count: &nbsp; {{height}}</li>
             <li><a href="#!/blockList">Block List</a></li>
             <li><a href="#!/transactionList">Transactoin List</a></li>
           </ul>

@@ -32,9 +32,6 @@ angular.
         when('/blockExplorer', {
           template: '<block-explorer></block-explorer>'
         }).
-        when('/chainStats', {
-          template: '<chain-stats></chain-stats>'
-        }).
         when('/blockList', {
           template: '<block-list></block-list>'
         }).

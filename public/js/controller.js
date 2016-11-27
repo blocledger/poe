@@ -21,16 +21,15 @@ var baseUrl = '.';
 
 myApp.controller('heightCtrl', ['$scope', '$http', '$interval',
 function($scope, $http, $interval) {
-  console.log('Height Controller');
+  // console.log('Height Controller');
   getHeight();
   var stopUpdate = $interval(function() {
     getHeight();
-  }, 600000);
+  }, 10000);
   function getHeight() {
-    $http.get(baseUrl + '/chain').success(function(response) {
+    $http.get(baseUrl + '/blockCount').success(function(response) {
       //console.log('got chain_stats');
-      $scope.height = response.height;
-      $scope.chainStats = response;
+      $scope.height = response;
     });
   }
   // Copied from the Angular documentation
@@ -41,25 +40,6 @@ function($scope, $http, $interval) {
   });
 }]);
 
-myApp.controller('chainCtrl', ['$scope', '$http', '$window',
-  function($scope, $http, $window) {
-  console.log('Chain Controller');
-  $http.get(baseUrl + '/chain').then(function(response) {
-    console.log('got chain_stats');
-    $scope.chainStats = response.data;
-  }, function(response) {
-    //$window.alert(response.data);
-    $scope.showErrorAlert = true;
-    $scope.alertErrorMsg = response.data;
-
-  });
-}]).directive('chainStats', function() {
-  return {
-    controller: 'chainCtrl',
-    templateUrl: 'templates/chainStats.html'
-  };
-});
-
 myApp.controller('transactionListCtrl', ['$scope', '$http',
     function($scope, $http) {
   console.log('Get the last 20 transactions');
@@ -67,6 +47,7 @@ myApp.controller('transactionListCtrl', ['$scope', '$http',
   $http.get(baseUrl + '/chain/transactionList/20000')
   .success(function(response) {
     $scope.transactionList = response;
+    console.log(response);
   });
   $scope.popup = function(index) {
     $scope.popupTransaction = $scope.transactionList[index];
@@ -82,10 +63,11 @@ myApp.controller('blockListCtrl', ['$scope', '$http', function($scope, $http) {
   console.log('Get the last 20 blocks');
   $scope.blockList = [];
   $http.get(baseUrl + '/chain/blockList/20000').success(function(response) {
+    console.log(response);
     $scope.blockList = response;
   });
   $scope.popup = function(index) {
-    $scope.popupBlock = $scope.blockList[index].block;
+    $scope.popupBlock = $scope.blockList[index];
   };
 }]).directive('blockList', function() {
   return {
@@ -163,8 +145,8 @@ myApp.controller('poeAppCtrl', ['$scope', '$http', function($scope, $http) {
     templateUrl: 'templates/poeApp.html'
   };
 });
-myApp.controller('verifyDocCtrl', ['$scope', '$http', '$filter',
-function($scope, $http, $filter) {
+myApp.controller('verifyDocCtrl', ['$scope', '$http', '$filter', '$uibModal',
+function($scope, $http, $filter, $uibModal) {
   $scope.hash = '';
   $scope.fileName = '';
   $scope.date = '';
@@ -241,6 +223,54 @@ function($scope, $http, $filter) {
         $scope.alertErrorMsg = response.data;
       });
     }
+  };
+
+  // delete a document
+  $scope.delete = function(hash) {
+    var modalInstance = $uibModal.open({
+      templateUrl: 'templates/confirmModal.html',
+      controller: 'confirmModalCtrl',
+      size: 'sm',
+    });
+    modalInstance.result.then(function() {  //Do this if the user selects the OK button
+      var params = {
+        'hash': hash,
+      };
+      $http.post(baseUrl + '/delDoc', params)
+      .then(function(response) {
+        console.log('document %s deleted', hash);
+      });
+    }, function() {
+      console.log('Modal dismissed at: ' + new Date());
+    });
+  };
+
+  //  Edit a document record.
+  $scope.edit = function(hash, owner) {
+    var editDoc = {'Hash': hash, 'Owner': owner};
+    var modalInstance = $uibModal.open({
+      templateUrl: 'templates/editModal.html',
+      controller: 'editModalCtrl',
+      size: '',
+      resolve: {
+        doc: function() {
+          return editDoc;
+        }
+      }
+    });
+    modalInstance.result.then(function(doc) {  //Do this if the user selects the OK button
+      console.log(doc);
+      var params = {
+        'hash': doc.Hash,
+        'owner': doc.Owner
+      };
+      $http.post(baseUrl + '/editDoc', params)
+      .then(function(response) {
+        console.log('document %s has changed', doc.Hash);
+      });
+    }, function() {
+      console.log('Modal dismissed at: ' + new Date());
+    });
   };
 }]).directive('verifyDoc', function() {
   return {

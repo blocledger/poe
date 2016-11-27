@@ -3,20 +3,20 @@
   <table class="table table-striped">
     <thead>
       <tr>
-        <th  class="col-sm-2">Transaction ID</th>
-        <th>Time</th>
-        <th>Type</th>
-        <th class="col-sm-4">Playload </th>
-        <th class="col-sm-2">Chaincode ID</th>
+        <th>Transaction ID</th>
+        <th>Function</th>
+        <th>Document hash</th>
+        <th class="col-sm-4">Arguments </th>
+        <th class="col-sm-2">Chaincode</th>
       </tr>
     </thead>
     <tbody>
       <tr ng-repeat="tx in transactionList track by $index" ng-class="{danger: tx.result.errorCode}" >
         <td><a href="" data-toggle="modal" data-target="#myModal" ng-click="popup($index)">{{tx.transaction.txid }}</a></td>
-        <td>{{tx.transaction.timestamp.seconds * 1000 | date:"medium"}}</td>
-        <td>{{tx.transaction.type}}</td>
-        <td>{{tx.transaction.payload.chaincodeSpec.ctorMsg.args}}</td>
-        <td>{{tx.transaction.chaincodeID.name }}</td>
+        <td>{{tx.chaincodeSpec.ctorMsg.args[0]}}</td>
+        <td>{{tx.chaincodeSpec.ctorMsg.args[1]}}</td>
+        <td>{{tx.chaincodeSpec.ctorMsg.args[2]}}</td>
+        <td>{{tx.chaincodeSpec.chaincodeID.name }}</td>
       </tr>
     </tbody>
   </table>
