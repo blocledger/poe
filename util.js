@@ -80,27 +80,6 @@ var decodePayload = function(transaction) {
       payload = transaction.payload;
 
   }
-
-  //console.log('Transacation type ' + transaction.type);
-  // console.log('Payload -- ', payload);
-  // if (payload && payload.chaincodeSpec) {
-  //   console.log('Payload args -- ', payload.chaincodeSpec.ctorMsg.args[1].toString());
-  //
-  //   // console.log('Is bytebuffer  ', ByteBuffer.isByteBuffer(payload.chaincodeSpec.ctorMsg.args[0]));
-  //   // var bb = ByteBuffer();
-  //   // bb = payload.chaincodeSpec.ctorMsg.args[0];
-  //   payload.chaincodeSpec.ctorMsg.args[0].printDebug();
-  //   payload.chaincodeSpec.ctorMsg.args[1].printDebug();
-  //   console.log('payload bytebuffer  ', payload.chaincodeSpec.ctorMsg.args[0].toArrayBuffer().toString());
-  //   var input = payload.chaincodeSpec.ctorMsg.args;
-  //   var output = [];
-  //   for (var i = 0; i < input.length; i++) {
-  //     console.log(input[i].toBuffer().toString());
-  //     output.push(input[i].toBuffer().toString());
-  //   }
-  //   console.log(output);
-  // }
-
   if (payload && payload.chaincodeSpec) {
     var input = payload.chaincodeSpec.ctorMsg.args;
     var output = [];
@@ -142,90 +121,69 @@ var decodeType = function(transaction) {
   return transaction.type;
 };
 
-var decodeBlockOld = function(block) {
-  var newBlock = block;
-  if (!block.transactions) {
-    return block;
-  }
-  var len = block.transactions.length;
-  for (var i = 0; i < len; i++) {
-    newBlock.transactions[i].type = decodeType(block.transactions[i]);
-    newBlock.transactions[i].chaincodeID =
-      decodeChaincodeID(block.transactions[i]);
-    if (newBlock.transactions[i].payload) {
-      newBlock.transactions[i].payload =
-        decodePayload(block.transactions[i]);
-    }
-  }
-  return newBlock;
-};
-
 //jscs:disable maximumLineLength
 var decodeBlock = function(response) {
   console.log('============  Start decoding buffer =================');
-  var block = response.Block.Data.Data[0];
-  console.log(block);
+  console.log(response.Block);
   var newBlock = response.Block;
   newBlock.Header.PreviousHash = response.Block.Header.PreviousHash.toString('hex');
   newBlock.Header.DataHash = response.Block.Header.DataHash.toString('hex');
-  var payload = newBlock.Data.Data[0].payload;
-  console.log(payload);
-  if (payload.header.chainHeader.type != 3) {
-    return newBlock;
+  if (response.Block.Metadata) {
+    console.log(response.Block.Metadata.Metadata[0].toString());
+  }
+  for (var i = 0; i < newBlock.Data.Data.length; i++) {
+    var payload = newBlock.Data.Data[i].payload;
+    console.log(payload);
+    if (payload.header.chainHeader.type != 3) {
+      continue;
+    }
+    payload.header.signatureHeader.creator = payload.header.signatureHeader.creator.toString('hex');
+    payload.header.signatureHeader.nonce = payload.header.signatureHeader.nonce.toString('hex');
+    var transaction = PROTOS.Transaction2.decode(payload.data);
+    console.log(transaction);
+    console.log(transaction.actions[0].payload.chaincodeProposalPayload);
+    console.log('---------------');
+    for (var j = 0; j < transaction.actions.length; j++) {
+      transaction.actions[j].header.chainHeader.chainID = transaction.actions[j].header.chainHeader.chainID.toBuffer().toString('hex');
+      transaction.actions[j].header.chainHeader.extension = transaction.actions[j].header.chainHeader.extension.toBuffer().toString('hex');
+      transaction.actions[j].header.signatureHeader.creator = transaction.actions[j].header.signatureHeader.creator.toBuffer().toString('hex');
+      transaction.actions[j].header.signatureHeader.nonce = transaction.actions[j].header.signatureHeader.nonce.toBuffer().toString('hex');
+      transaction.actions[j].payload.action.proposalResponsePayload.proposalHash = transaction.actions[j].payload.action.proposalResponsePayload.proposalHash.toBuffer().toString('hex');
+      transaction.actions[j].payload.action.proposalResponsePayload.extension.results = transaction.actions[j].payload.action.proposalResponsePayload.extension.results.toBuffer().toString();
+      transaction.actions[j].payload.action.proposalResponsePayload.extension.events = transaction.actions[j].payload.action.proposalResponsePayload.extension.events.toBuffer().toString('hex');
+      for (var k = 0; k < transaction.actions[j].payload.action.endorsements.length; k++) {
+        transaction.actions[j].payload.action.endorsements[k].endorser = transaction.actions[j].payload.action.endorsements[k].endorser.toBuffer().toString();
+        transaction.actions[j].payload.action.endorsements[k].signature = transaction.actions[j].payload.action.endorsements[k].signature.toBuffer().toString();
+      }
+    }
+    /* results encoding
+    { results: '
+    \u0001\u000e poe_chaincode4
+    \u0001@ 7fa2dd21aa8ddda570b1e421778ed3768106572dd7b396b0eb49bcb0b9ff487e
+    \t\u0001@ 7fa2dd21aa8ddda570b1e421778ed3768106572dd7b396b0eb49bcb0b9ff487e
+    \u0000�\u0001 {"Name":"1098.pdf","Hash":"7fa2dd21aa8ddda570b1e421778ed3768106572dd7b396b0eb49bcb0b9ff487e","Version":"1.0","Owner":"Eric","TxID":"ba71ca67-4696-4ae3-a296-d8961a169206","Date":{"Seconds":1480280268,"Nanos":929606753}}'
+
+    results: '
+    010e 706f655f636861696e636f646534
+    0140 37666132646432316161386464646135373062316534323137373865643337363831303635373264643762333936623065623439626362306239666634383765
+    090140 37666132646432316161386464646135373062316534323137373865643337363831303635373264643762333936623065623439626362306239666634383765
+    00da01 7b224e616d65223a22313039382e706466222c2248617368223a2237666132646432316161386464646135373062316534323137373865643337363831303635373264643762333936623065623439626362306239666634383765222c2256657273696f6e223a22312e30222c224f776e6572223a2245726963222c2254784944223a2262613731636136372d343639362d346165332d613239362d643839363161313639323036222c2244617465223a7b225365636f6e6473223a313438303238303236382c224e616e6f73223a3932393630363735337d7d',
+ events: '' }
+    */
+
+    console.log(transaction.actions[0].header.chainHeader);
+    console.log('---------------');
+    console.log(transaction.actions[0].header.chainHeader.chainID);
+    console.log(transaction.actions[0].header.chainHeader.extension);
+    console.log('---------------');
+    console.log('---------------');
+    console.log(transaction.actions[0].payload.chaincodeProposalPayload);
+    console.log('---------------');
+    console.log(transaction.actions[0].payload.action.proposalResponsePayload.extension);
+    console.log('---------------');
+    newBlock.Data.Data[i].payload.data = transaction;
   }
 
-  var transaction = PROTOS.Transaction2.decode(payload.data);
-  console.log(transaction);
-  console.log(transaction.actions[0].payload.chaincodeProposalPayload);
-
-  newBlock.Data.Data[0].payload.data = transaction;
-
-  console.log('============  Stop decoding transactions =================');
-  return newBlock;
-};
-
-var decodeBlockTemp = function(response) {
-  var block = COMMON.Envelope.decode(response.Block.Data.Data[0]);
-  console.log(block);
-  var newBlock = response.Block;
-  newBlock.Data.Data[0] = block;
-  console.log('============  Start decoding buffer =================');
-  console.log(response.Block.Header.PreviousHash);
-  console.log('PreviousHash is a Buffer: ' + Buffer.isBuffer(response.Block.Header.PreviousHash));
-  newBlock.Header.PreviousHash = response.Block.Header.PreviousHash.toString('hex');
-  newBlock.Header.DataHash = response.Block.Header.DataHash.toString('hex');
-  console.log(newBlock.Header.PreviousHash);
-  console.log('=============  Data  =============');
-  console.log(newBlock.Data.Data);
-  var payload = COMMON.Payload.decode(newBlock.Data.Data[0].payload);
-  console.log(payload);
-  newBlock.Data.Data[0].payload = payload;
-  //  skip decoding the rest if it is a configuration transaction
-  if (payload.header.chainHeader.type != 3) {
-    return newBlock;
-  }
-  newBlock.Data.Data[0].payload.header.chainHeader.chainID = payload.header.chainHeader.chainID.toBuffer().toString();
-  console.log(newBlock.Data.Data[0].payload.header.chainHeader);
-  console.log('--------');
-  console.log(payload.data.toBuffer());
-  console.log('============  Stop decoding buffer =================');
-  var transaction = PROTOS.Transaction2.decode(payload.data);
-  console.log(transaction);
-  console.log(transaction.actions[0].header.toBuffer());
-  console.log(transaction.actions[0].payload.toBuffer());
-  transaction.actions[0].payload = PROTOS.ChaincodeActionPayload.decode(transaction.actions[0].payload);
-  console.log(transaction.actions[0].payload);
-  console.log(transaction.actions[0].payload.chaincodeProposalPayload.toBuffer());
-  transaction.actions[0].payload.chaincodeProposalPayload = PROTOS.ChaincodeProposalPayload.decode(transaction.actions[0].payload.chaincodeProposalPayload);
-  transaction.actions[0].payload.chaincodeProposalPayload.Input = PROTOS.ChaincodeInvocationSpec.decode(transaction.actions[0].payload.chaincodeProposalPayload.Input);
-  console.log(transaction.actions[0].payload.chaincodeProposalPayload.Input.chaincodeSpec);
-  var args = transaction.actions[0].payload.chaincodeProposalPayload.Input.chaincodeSpec.ctorMsg.args;
-  for (var i = 0; i < args.length; i++) {
-    args[i] = args[i].toBuffer().toString();
-  }
-  transaction.actions[0].payload.chaincodeProposalPayload.Input.chaincodeSpec.ctorMsg.args = args;
-
-  newBlock.Data.Data[0].payload.data = transaction;
   console.log('============  Stop decoding transactions =================');
   return newBlock;
 };

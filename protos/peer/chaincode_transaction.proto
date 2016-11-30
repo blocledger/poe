@@ -50,7 +50,7 @@ message ChaincodeEndorsedAction {
 	// This is the bytes of the ProposalResponsePayload message signed by the
 	// endorsers.  Recall that for the CHAINCODE type, the
 	// ProposalResponsePayload's extenstion field carries a ChaincodeAction
-	bytes proposalResponsePayload = 1;
+	ProposalResponsePayload proposalResponsePayload = 1;
 
 	// The endorsement of the proposal, basically the endorser's signature over
 	// proposalResponsePayload

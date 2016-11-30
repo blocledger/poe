@@ -57,14 +57,14 @@ message Header {
 	// creator identifies the signer of
 	// 1. a proposal (if this is the header of a Proposal message)
 	// 2. a transaction (if this is the header of a TransactionAction message)
-	bytes creator = 4;
+	string creator = 4;
 
 	// Arbitrary number that may only be used once. This ensures the hash of
 	// the proposal is unique and may be used in replay detection
 	bytes nonce = 5;
 
 	// Identifier of the chain this header targets to
-	bytes chainID = 6;
+	ChaincodeID chainID = 6;
 
 	// Extensions is used to include type-dependant fields
 	bytes extensions = 7;
