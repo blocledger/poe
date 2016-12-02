@@ -37,7 +37,7 @@ install Vagrant and the fabric source before continuing.
 In a windows git-bash console, checkout the specified version of fabric and go to the devenv directory.
 ```
 cd $GOPATH/src/github.com/hyperledger/fabric/
-git checkout -b sprint5 af5285a4b466de0453790915c4cdce05d4050c1e
+git checkout -b sprint5 b0e902ea482a5dd4f5a82b8051052c2915811e59
 cd $GOPATH/src/github.com/hyperledger/fabric/devenv/
 ```
 Make the changes specified in the fabric-sdk-node README to the `Vagrantfile` file.  Namely add the following lines.
@@ -45,6 +45,7 @@ Make the changes specified in the fabric-sdk-node README to the `Vagrantfile` fi
 config.vm.network :forwarded_port, guest: 5151, host: 5151 # orderer service
 config.vm.network :forwarded_port, guest: 7056, host: 7056 # Openchain gRPC services
 config.vm.network :forwarded_port, guest: 7058, host: 7058 # GRPCCient gRPC services
+config.vm.network :forwarded_port, guest: 8888, host: 8888 # http port for COP server
 ```
 Now build the vagrant environment which can take some time.
 
@@ -57,19 +58,45 @@ Once this completes login to the vagrant image.
 Build the images for the Fabric's peers.
 ```
 cd /hyperledger
-make images
+make peer
+make orderer
 ```
 > **Note:** If this is not a fresh install you may need to run
-  `make clean` before running `make images`.  Additionally,
+  `make clean` before running `make`.  Additionally,
   if the fabric source has been updated recently it may be
   necessary to remove all of the old docker containers and images
-  before doing the `make images`.
+  before doing the `make`.
+
+### Create the COP server
+
+The new membership services node called COP is in a separate
+repository called fabric-cop that needs to be cloned and built
+within vagrant.
+```
+cd $GOPATH/src/github.com/hyperledger
+
+git clone http://gerrit.hyperledger.org/r/fabric-cop
+cd fabric-cop
+git checkout -b sprint5 299c79674c3428076745d8cda603a84de72adb18
+go get github.com/go-sql-driver/mysql
+go get github.com/lib/pq
+export COP="$GOPATH/src/github.com/hyperledger/fabric-cop"
+make cop
+cd $COP/bin
+./cop server start -address "" -ca ../testdata/ec.pem -ca-key ../testdata/ec-key.pem -config ../testdata/testconfig.json
+```
+
+To reset the COP server delete its data base file.
+
+`rm ~/.cop/cop.db`
+
+
 
 ### SDK setup
 In a second console window checkout the specified version of
 fabric-sdk-node and install the required packages.
 ```
-git checkout -b sprint5 bb46f2c7adf2f2823d1a43f86af5442da1cf2fe9
+git checkout -b sprint5 a7f57baca0ece7111f74f7b9174c2083df7cda86
 npm install
 ```
 The SDK(hfc) needs to be installed in the poe application from the
@@ -81,9 +108,69 @@ command with correct path for your setup.
 
 
 In the console window that is logged into vagrant create a
-`docker-compose.yml` file in the home directory with the contents
-from the `test/fixtures/docker-compose.yml` file from
+`docker-compose.yml` file in the home directory and paste
+in the contents below which are based on the
+`test/fixtures/docker-compose.yml` file from
 fabric-sdk-node.
+```
+orderer:
+  image: hyperledger/fabric-orderer
+  environment:
+    - ORDERER_GENERAL_LEDGERTYPE=ram
+    - ORDERER_GENERAL_BATCHTIMEOUT=10s
+    - ORDERER_GENERAL_BATCHSIZE=10
+    - ORDERER_GENERAL_MAXWINDOWSIZE=1000
+    - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
+    - ORDERER_RAMLEDGER_HISTORY_SIZE=100
+    - ORDERER_GENERAL_ORDERERTYPE=solo
+  working_dir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
+  command: orderer
+  ports:
+    - 5151:7050
+
+    vp0:
+      image: hyperledger/fabric-peer
+      environment:
+        - CORE_PEER_ADDRESSAUTODETECT=true
+        - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+        - CORE_LOGGING_LEVEL=DEBUG
+        - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
+        - CORE_NEXT=true
+        - CORE_PEER_ENDORSER_ENABLED=true
+        - CORE_PEER_ID=vp0
+        - CORE_PEER_PROFILE_ENABLED=true
+        - CORE_PEER_COMMITTER_LEDGER_ORDERER=orderer:7050
+      volumes:
+          - /var/run/:/host/var/run/
+      command: peer node start
+      links:
+        - orderer
+      ports:
+        - 7051:7051
+
+    vp1:
+      image: hyperledger/fabric-peer
+      environment:
+        - CORE_PEER_ADDRESSAUTODETECT=true
+        - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
+        - CORE_LOGGING_LEVEL=DEBUG
+        - CORE_PEER_NETWORKID=${CORE_PEER_NETWORKID}
+        - CORE_NEXT=true
+        - CORE_PEER_ENDORSER_ENABLED=true
+        - CORE_PEER_ID=vp1
+        - CORE_PEER_PROFILE_ENABLED=true
+        - CORE_PEER_COMMITTER_LEDGER_ORDERER=orderer:7050
+        - CORE_PEER_DISCOVERY_ROOTNODE=vp0:7051
+      volumes:
+          - /var/run/:/host/var/run/
+      command: peer node start
+      links:
+        - orderer
+        - vp0
+      ports:
+        - 7056:7051
+
+```
 
 ## Starting fabric and the application
 
@@ -114,6 +201,11 @@ To rebuild the containers and start the blockchain from scratch use
   before it is started.
 
 > `rm -rf (path to poe source)/tmp/* `
+
+> Also, the COP database inside vagrant will need to be
+ deleted as well.
+
+> `rm ~/.cop/cop.db`
 
 ## Deploying chaincode with the SDK
 In order for SDK to deploy chaincode it must be in a directory by itself

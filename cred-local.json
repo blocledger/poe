@@ -22,11 +22,11 @@
     }
   ],
   "ca": {
-      "url": "localhost:7054",
+      "url": "localhost:8888",
       "discovery_host": "localhost",
-      "discovery_port": 7054,
+      "discovery_port": 8888,
       "api_host": "localhost",
-      "api_port_tls": 7054,
+      "api_port_tls": 8888,
       "api_port": 443,
       "type": "ca",
       "network_id": "localhost",
@@ -38,9 +38,9 @@
   "users": [
     {
       "username": "admin",
-      "secret": "Xurw3yU9zI0l",
+      "secret": "adminpw",
       "enrollId": "admin",
-      "enrollSecret": "Xurw3yU9zI0l"
+      "enrollSecret": "adminpw"
     },
     {
       "username": "WebAppAdmin",

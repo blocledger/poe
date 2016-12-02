@@ -64,6 +64,7 @@ var confidentialSetting = false;
 
 // This is probably a temp setting to override the default key size of 384
 hfc.setConfigSetting('crypto-keysize', 256);
+hfc.setConfigSetting('crypto-hash-algo', 'SHA2');
 
 // Create a client chain.
 // The name can be anything as it is only used internally.
@@ -106,7 +107,7 @@ var grpc = 'grpc://';
 var restUrl = cred.peers[0].api_url;
 
 // Set the URL for member services
-chain.setMemberServicesUrl(grpc + cred.ca.url);
+chain.setMemberServicesUrl('http://' + cred.ca.url);
 
 // set orderer
 chain.setOrderer(grpc + cred.orderer.url);
@@ -120,20 +121,34 @@ cred.peers.forEach(function(peer) {
 debug(peers);
 // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
 
+// The registration function is not implimented in COP or hfc.FabricCOPImpl.js
+// so we will need to use admin for everything for now.
+chain.enroll('admin', 'adminpw')
+.then(
+  function(admin) {
+    chain.setRegistrar(admin);
+    userMember1 = admin;
+  },
+  function(err) {
+    console.log('ERROR: failed to register admin', err);
+  }
+);
+
+/* comment out the old user registration until it is implimented by COP
 // search the user list for WebAppAdmin and return the password
 var credUser = cred.users.find(function(u) {
-  return u.username == 'WebAppAdmin';
+  return u.username == 'admin';
 });
 debug(credUser.secret);
 
-chain.enroll('WebAppAdmin', credUser.secret)
+chain.enroll('admin', credUser.secret)
 .then(
-  function(webAppAdmin) {
-    chain.setRegistrar(webAppAdmin);
+  function(admin) {
+    chain.setRegistrar(admin);
     return chain.getUser(user1.name);
   },
   function(err) {
-    console.log('ERROR: failed to register webAppAdmin', err);
+    console.log('ERROR: failed to register admin', err);
   }
 ).then(
   function(user) {
@@ -146,7 +161,7 @@ chain.enroll('WebAppAdmin', credUser.secret)
     debug(user);
     // User is not enrolled yet, so perform both registration and enrollment
     var registrationRequest = {
-      registrar: 'WebAppAdmin',
+      registrar: 'admin',
       enrollmentID: user1.name,
       //role: user1.role, // Client
       account: user1.account,
@@ -166,6 +181,7 @@ chain.enroll('WebAppAdmin', credUser.secret)
     console.log('registerAndEnroll error: ' + err);
   }
 );
+*/
 
 app.use(morgan('dev'));
 app.use(require('express').static(__dirname + '/public'));
@@ -193,7 +209,7 @@ app.get('/deploy', function(req, res) {
   var deployRequest = {
     targets: peers,
     chaincodePath: chaincodePath,
-    chaincodeId: 'poe_chaincode4',
+    chaincodeId: 'poe_chaincode5',
     fcn: 'init',
     args: [],
   };
